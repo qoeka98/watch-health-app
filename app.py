@@ -1,8 +1,14 @@
 import streamlit as st
 import numpy as np
 import joblib
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
 def main():
+    # ✅ 한글 폰트 설정 (맑은 고딕 적용)
+    plt.rc("font", family="Malgun Gothic")  # Windows 환경
+    plt.rcParams["axes.unicode_minus"] = False  # 마이너스(-) 부호 깨짐 방지
+
     # ✅ 모델 불러오기 (저장된 모델)
     model = joblib.load("classifier2_model.pkl")
 
@@ -34,6 +40,32 @@ def main():
         blood_pressure_diff
     ]])
 
+    # ✅ 대한민국 평균값 (남녀 구분)
+    avg_values_female = {
+        "키 (cm)": 157.49,
+        "몸무게 (kg)": 57.86,
+        "수축기 혈압 (mmHg)": 114.82,
+        "이완기 혈압 (mmHg)": 72.38,
+        "혈압 차이 (mmHg)": 42.44
+    }
+
+    avg_values_male = {
+        "키 (cm)": 171.22,
+        "몸무게 (kg)": 71.87,
+        "수축기 혈압 (mmHg)": 120.16,
+        "이완기 혈압 (mmHg)": 77.89,
+        "혈압 차이 (mmHg)": 42.27
+    }
+
+    # ✅ 사용자 입력값
+    user_values = {
+        "키 (cm)": height,
+        "몸무게 (kg)": weight,
+        "수축기 혈압 (mmHg)": systolic_bp,
+        "이완기 혈압 (mmHg)": diastolic_bp,
+        "혈압 차이 (mmHg)": blood_pressure_diff
+    }
+
     # ✅ 예측 버튼 클릭 시 실행
     if st.button("🔮 예측하기"):
         # AI 모델 예측 (확률 기반)
@@ -49,6 +81,45 @@ def main():
         st.write("### 📢 건강 예측 결과:")
         for disease, probability in disease_probabilities.items():
             st.write(f"✅ **{disease} 확률:** {probability:.2f}%")
+
+        # ✅ 평균값과 사용자의 입력값 비교 차트 생성
+        st.write("\n### 📊 평균 vs. 입력값 비교")
+        st.info('''유저가 입력한 값과 국민건강영양조사에 기반한 결과 일반적인 건강지표(실제 성인의 평균과 다소 차이가 있을 수 있습니다)를 비교한 표입니다.
+                자신이 얼마나 건강한지 혹은 건강을 챙겨야하는지 평균과 비교하여 자신의 건강상태를 한눈에 알아 봅시다! ''')
+
+        # ✅ 성별에 맞는 평균값 선택
+        avg_values = avg_values_male if gender == "남성" else avg_values_female
+
+        # ✅ Matplotlib 그래프 생성
+        fig, ax = plt.subplots()
+
+        # ✅ X축 라벨
+        labels = list(avg_values.keys())
+
+        # ✅ 평균 데이터 (각 지표의 평균값)
+        avg_data = list(avg_values.values())
+
+        # ✅ 사용자 입력 데이터
+        user_data = list(user_values.values())  
+
+        # ✅ X축 위치
+        x = np.arange(len(labels))
+        width = 0.35  # 바 차트 너비
+
+        # ✅ 바 차트 생성
+        ax.bar(x - width/2, avg_data, width, label="대한민국 건강 평균값", color="blue", alpha=0.6)
+        ax.bar(x + width/2, user_data, width, label="유저의 입력값", color="red", alpha=0.7)
+
+        # ✅ 그래프 설정 (한글 폰트 적용됨)
+        ax.set_xlabel("건강 지표")
+        ax.set_ylabel("수치")
+        ax.set_title("평균값과 입력값 비교")
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=15)
+        ax.legend()
+
+        # ✅ Streamlit에 그래프 표시
+        st.pyplot(fig)
 
         # ✅ 최종 건강 진단 & 조치 추천
         st.write("\n### ✅ 최종 건강 진단 & 조치 추천 ✅")
@@ -68,22 +139,6 @@ def main():
             st.warning("⚠️ **과체중 상태입니다. 식단 관리와 운동을 병행하세요.**")
         else:
             st.success("✅ **비만 위험이 낮습니다. 건강한 체중을 유지하세요.**")
-
-        # **당뇨병 (diabetes)**
-        if disease_probabilities["당뇨병"] > 50:
-            st.warning("⚠️ **당뇨병 위험이 높습니다. 혈당을 주기적으로 체크하고, 당 섭취를 줄이세요.**")
-        elif disease_probabilities["당뇨병"] > 20:
-            st.info("🟡 **당뇨병 위험이 보통입니다. 건강한 식단을 유지하세요.**")
-        else:
-            st.success("✅ **당뇨병 위험이 낮습니다.**")
-
-        # **고지혈증 (hyperlipidemia)**
-        if disease_probabilities["고지혈증"] > 50:
-            st.warning("⚠️ **고지혈증(고콜레스테롤) 위험이 높습니다. 지방 섭취를 줄이고 운동을 병행하세요.**")
-        elif disease_probabilities["고지혈증"] > 20:
-            st.info("🟡 **고지혈증 위험이 보통입니다. 정기적인 건강 검진을 받으세요.**")
-        else:
-            st.success("✅ **고지혈증 위험이 낮습니다.**")
 
         st.write("\n🩺 **건강을 위해 정기적인 검진을 받고, 생활습관을 개선하세요!** 🚀")
 

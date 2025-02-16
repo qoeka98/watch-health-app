@@ -9,4 +9,5 @@ joblib
 plotly
 pandas
 scikit-learn
+XGBClassifier
 

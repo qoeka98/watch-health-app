@@ -7,6 +7,6 @@ google-api-python-client
 numpy
 joblib
 plotly
-scikit-learn  
-pandas 
+pandas
+scikit-learn
 

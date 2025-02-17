@@ -38,7 +38,7 @@ def get_google_fit_data(creds):
     """Google Fit API에서 사용자 데이터 가져오기"""
     service = build("fitness", "v1", credentials=creds)
     
-    # ✅ API 요청 기간을 "오늘 포함"으로 변경
+    # ✅ API 요청 기간을 "오늘 포함"으로 변
     now = datetime.datetime.utcnow()
     start_time = now - datetime.timedelta(days=0)  # 오늘 포함
     dataset_id = f"{int(start_time.timestamp() * 1e9)}-{int(now.timestamp() * 1e9)}"

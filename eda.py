@@ -17,7 +17,7 @@ def run_eda():
     # ✅ 설문 입력 폼
     with st.form("health_form"):
         st.markdown("### 📝 **개인정보 설문**")
-        st.info("아래 정보를 입력해주세요. (실제 값이 아닐 경우 예측 정확도가 떨어질 수 있습니다.)")
+        st.info("아래 정보를 입력해주세요.")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -52,7 +52,7 @@ def run_eda():
 
     if submit:
         try:
-            # ✅ 사용자 입력 값을 `st.session_state`에서 가져옴
+            # ✅ 사용자 입력 값 저장
             gender = st.session_state.gender
             age = st.session_state.age
             height = st.session_state.height
@@ -86,19 +86,27 @@ def run_eda():
                     predicted_probs = model.predict(input_data)
 
                 # 🔍 **예측 결과 형태 확인**
-                if isinstance(predicted_probs, list):  
-                    predicted_probs = np.array(predicted_probs)  # 리스트 → NumPy 배열 변환
-                
-                if predicted_probs.ndim == 1:  
-                    predicted_probs = predicted_probs.reshape(1, -1)  # (N,) → (1, N) 변환
-                
+                st.write("📌 **모델 원본 출력:**", predicted_probs)
+                st.write(f"예측 크기: {predicted_probs.shape}")
+
+                # 🔍 출력 차원 변환 (예상 크기: `(4, 1, 2)`)
+                if predicted_probs.ndim == 3 and predicted_probs.shape[2] == 2:
+                    predicted_probs = predicted_probs[:, 0, 1]  # 올바른 차원으로 변환
+                elif predicted_probs.ndim == 2 and predicted_probs.shape[1] == 2:
+                    predicted_probs = predicted_probs[:, 1]  # (N, 2)일 경우 두 번째 열 사용
+                elif predicted_probs.ndim == 1:
+                    pass  # 이미 1D이면 변환 불필요
+                else:
+                    st.error(f"⚠️ 모델 예측 결과를 변환할 수 없습니다. 예측 크기: {predicted_probs.shape}")
+                    return
+
                 # 🔍 모델이 4개의 질병을 예측하는지 확인
-                if predicted_probs.shape[1] < 4:
+                if len(predicted_probs) < 4:
                     st.error(f"⚠️ 모델이 4개의 질병을 예측하지 않습니다. 예측 크기: {predicted_probs.shape}")
                     return
 
                 diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-                disease_probabilities = {diseases[i]: predicted_probs[0][i] * 100 for i in range(4)}
+                disease_probabilities = {diseases[i]: predicted_probs[i] * 100 for i in range(4)}
 
             else:
                 st.error("⚠️ 모델이 로드되지 않아 기본값(0%)을 반환합니다.")

@@ -5,10 +5,10 @@ google-auth-oauthlib
 google-auth-httplib2
 google-api-python-client
 numpy
-joblib==1.3.2
+joblib
 plotly
 pandas
-scikit-learn==1.2.2
+scikit-learn
 xgboost
 huggingface_hub
 

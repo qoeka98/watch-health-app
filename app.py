@@ -37,8 +37,7 @@ def main():
                     "transition": "0.3s",
                     "color": "#333",
                 },
-                "nav-link-selected": {"background-color": "#007bff", "color": "white"},
-                "nav-link:hover": {"background-color": "#e9ecef"}  # 호버 효과 추가
+                
             }
         )
 

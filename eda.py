@@ -83,7 +83,7 @@ def run_eda():
 
                 # 🔍 예측 결과 변환
                 if isinstance(predicted_probs, list):  # 리스트 형태라면
-                    predicted_probs = [arr[0, 1] for arr in predicted_probs]
+                    predicted_probs = np.array([arr[0, 1] for arr in predicted_probs]).flatten()
                 elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 3:
                     predicted_probs = predicted_probs[:, 0, 1]
                 elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 2:

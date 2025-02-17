@@ -73,7 +73,7 @@ def run_eda():
 
     # ✅ 예측 실행
     if submit:
-        # 자동 계산 (숨김)
+        # 자동 계산
         bp_ratio = round(systolic_bp / diastolic_bp, 2)
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
@@ -106,10 +106,16 @@ def run_eda():
         disease_probabilities = {}
         for i, disease in enumerate(diseases):
             try:
-                disease_probabilities[disease] = predicted_probs[i][1] * 100
+                prob = predicted_probs[i][1] * 100
             except IndexError:
                 print(f"🚨 {disease} 예측값이 없습니다. 기본값 0으로 설정")
-                disease_probabilities[disease] = 0
+                prob = 0
+
+            # `NaN`, `None`, `inf` 방지
+            if not isinstance(prob, (int, float)) or np.isnan(prob) or np.isinf(prob):
+                prob = 0  
+
+            disease_probabilities[disease] = prob
 
         # ✅ 예측된 질병 확률 출력 (디버깅용)
         st.subheader("🔍 예측된 질병 확률 확인")
@@ -131,18 +137,6 @@ def run_eda():
                 with col2:
                     st.metric(label=f"📊 {disease} 위험", value=f"{prob:.2f}%")
                     st.progress(normalized_prob)
-
-        st.write("\n### ✅ 건강 진단 및 조치 추천 ✅")
-
-        for disease in diseases:
-            if disease_probabilities[disease] > 90:
-                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
-            elif disease_probabilities[disease] > 75:
-                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
-            elif disease_probabilities[disease] > 50:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 운동과 식이조절이 필요할 수 있습니다.**")
-            else:
-                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
 
 if __name__ == "__main__":
     run_eda()

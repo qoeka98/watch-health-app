@@ -47,7 +47,7 @@ def get_huggingface_token():
     return token
 
 def run_snagdam():
-    st.title("💬 건강 상담 챗봇!")
+    st.title("💬 건강 상담 챗봇")
     st.info('''건강예측을 바탕으로 건강 상담을 진행해보세요! ''')
     token=get_huggingface_token()
     # ✅ Hugging Face Inference API 클라이언트 설정

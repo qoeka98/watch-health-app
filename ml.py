@@ -1,21 +1,31 @@
 import datetime
 import streamlit as st
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-# ✅ Google Fit API OAuth 인증 정보
+# ✅ Google Fit API 인증 정보 (서비스 계정 JSON 파일 사용)
+SERVICE_ACCOUNT_FILE = "service_account.json"  # 🔥 서비스 계정 JSON 파일
 SCOPES = ["https://www.googleapis.com/auth/fitness.activity.read"]
-CLIENT_SECRET_FILE = "client_secret_1077330647143-9vjkcnuvt3sdl8jta68najs64u7j1ja9.apps.googleusercontent.com.json"
+
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 def authenticate_google_fit():
-    """✅ Google Fit OAuth 인증 실행"""
-    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-    creds = flow.run_local_server(port=0)  # 사용자가 직접 로그인해야 함
-    service = build("fitness", "v1", credentials=creds)
-    return service
+    """Google Fit API 인증 (서버 환경에서도 동작하도록 수정)"""
+    SCOPES = ["https://www.googleapis.com/auth/fitness.activity.read"]
+
+    flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES)
+
+    try:
+        creds = flow.run_local_server(port=0)  # 🚨 브라우저 환경이 없으면 오류 발생
+    except Exception:
+        print("🚨 로컬 서버 인증 실패! 콘솔 인증을 시도합니다.")
+        creds = flow.run_console()  # ✅ 서버 환경에서도 동작 가능 (사용자 입력 필요)
+
+    return creds
+
 
 def get_user_google_fit_data():
-    """✅ 사용자의 Google Fit 데이터를 가져오는 함수"""
+    """✅ Google Fit에서 건강 데이터를 가져오는 함수"""
     service = authenticate_google_fit()
 
     now = datetime.datetime.utcnow()
@@ -41,6 +51,8 @@ def get_user_google_fit_data():
                 fit_data[key] = result["point"][-1]["value"][0]["fpVal"]
             else:
                 fit_data[key] = "정보 없음"
+        except KeyError:
+            fit_data[key] = "정보 없음"
         except Exception as e:
             fit_data[key] = f"오류 발생: {e}"
 
@@ -71,4 +83,3 @@ def run_ml():
 
 if __name__ == "__main__":
     run_ml()
-

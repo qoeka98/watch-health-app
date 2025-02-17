@@ -2,15 +2,9 @@ import streamlit as st
 import numpy as np
 import joblib
 import plotly.graph_objects as go
-import os
 
-# ✅ 모델 파일 확인 후 로드
-model_path = "classifier2_model.pkl"
-if not os.path.exists(model_path):
-    st.error("🚨 모델 파일이 없습니다! `classifier2_model.pkl`을 확인하세요.")
-    st.stop()
-
-model = joblib.load(model_path)
+# ✅ 모델 불러오기
+model = joblib.load("classifier2_model.pkl")
 
 def run_eda():
     st.title("🩺 건강 예측 AI")
@@ -43,7 +37,7 @@ def run_eda():
             height = st.number_input("🔹 키 (cm)", min_value=120, max_value=250, value=170)
             weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70)
 
-        st.markdown("---")  
+        st.markdown("---")  # 🔹 구분선 추가
         st.markdown("### 💖 **건강 정보 입력!**")
 
         col3, col4 = st.columns(2)
@@ -52,7 +46,7 @@ def run_eda():
         with col4:
             diastolic_bp = st.number_input("🩸 이완기(최저) 혈압 (mmHg)", min_value=40, max_value=150, value=80)
 
-        st.markdown("---")  
+        st.markdown("---")  # 🔹 구분선 추가
         st.markdown("### 🏃 **생활 습관 입력**")
         st.text('해당되는 부분에 체크해주세요(중복가능)')
 
@@ -69,11 +63,15 @@ def run_eda():
             active = st.checkbox("🏃 운동 여부")
             active = 1 if active else 0
 
+        # ✅ 예측 버튼
+        st.write("")
+        st.write("-----")
         submit = st.form_submit_button("🔮 예측하기")
+        st.write("")
 
     # ✅ 예측 실행
     if submit:
-        # 자동 계산
+        # 자동 계산 (숨김)
         bp_ratio = round(systolic_bp / diastolic_bp, 2)
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
@@ -81,62 +79,109 @@ def run_eda():
         input_data = np.array([[ 
             1 if gender == "남성" else 0, age, height, weight,
             smoke, alco, active, systolic_bp, diastolic_bp,
-            bp_ratio, BMI, blood_pressure_diff  
+            bp_ratio, BMI, blood_pressure_diff  # 🔥 자동 계산된 값 포함 (유저에게 숨김)
         ]])
 
-        # ✅ 예측 실행 (모델 출력 검증)
         predicted_probs = model.predict_proba(input_data)
-
-        # ✅ 모델 예측값 보정
-        if isinstance(predicted_probs, list):
-            predicted_probs = np.array(predicted_probs)  
-
-        if predicted_probs.ndim == 3:
-            predicted_probs = predicted_probs.squeeze()  
 
         # ✅ 질병 리스트
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
+        disease_probabilities = {diseases[i]: predicted_probs[i][0][1] * 100 for i in range(len(diseases))}
 
-        # `predicted_probs` 길이 확인 후 보정
-        if len(predicted_probs) < len(diseases):
-            print("🚨 모델의 출력 개수가 예상보다 적습니다. 기본값 0으로 채웁니다.")
-            predicted_probs = np.pad(predicted_probs, ((0, len(diseases) - len(predicted_probs)), (0, 0)), mode='constant', constant_values=0)
-
-        # ✅ 최종 예측 확률 계산
-        disease_probabilities = {}
-        for i, disease in enumerate(diseases):
-            try:
-                prob = predicted_probs[i][1] * 100
-            except IndexError:
-                print(f"🚨 {disease} 예측값이 없습니다. 기본값 0으로 설정")
-                prob = 0
-
-            # `NaN`, `None`, `inf` 방지
-            if not isinstance(prob, (int, float)) or np.isnan(prob) or np.isinf(prob):
-                prob = 0  
-
-            disease_probabilities[disease] = prob
-
-        # ✅ 예측된 질병 확률 출력 (디버깅용)
-        st.subheader("🔍 예측된 질병 확률 확인")
-        st.json(disease_probabilities)
-
-        st.markdown("---")  
+        st.markdown("---")  # 🔹 구분선 추가
         st.markdown("### 📢 **건강 예측 결과**")
 
         col1, col2 = st.columns(2)
-        for i, disease in enumerate(diseases):
-            prob = disease_probabilities.get(disease, 0)  
-            normalized_prob = min(max(prob / 100, 0), 1)  
+        with col1:
+            st.metric(label="💓 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
+            st.progress(disease_probabilities["고혈압"] / 100)
 
-            if i % 2 == 0:
-                with col1:
-                    st.metric(label=f"📊 {disease} 위험", value=f"{prob:.2f}%")
-                    st.progress(normalized_prob)
+            st.metric(label="⚖️ 비만 위험", value=f"{disease_probabilities['비만']:.2f}%")
+            st.progress(disease_probabilities["비만"] / 100)
+
+        with col2:
+            st.metric(label="🍬 당뇨병 위험", value=f"{disease_probabilities['당뇨병']:.2f}%")
+            st.progress(disease_probabilities["당뇨병"] / 100)
+
+            st.metric(label="🩸 고지혈증 위험", value=f"{disease_probabilities['고지혈증']:.2f}%")
+            st.progress(disease_probabilities["고지혈증"] / 100)
+
+        st.write("")
+
+        st.write("\n### ✅ 건강 진단 및 조치 추천 ✅")
+
+        def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
+            prob = disease_probabilities[disease]
+    
+            if prob > very_high:
+                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
+            elif prob > high:
+                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 주기적인 건강 체크를 권장합니다.**")
+            elif prob > moderate:
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 생활습관 개선을 고려하세요. 운동과 식이조절이 필요할 수 있습니다.**")
+            elif prob > low:
+                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
             else:
-                with col2:
-                    st.metric(label=f"📊 {disease} 위험", value=f"{prob:.2f}%")
-                    st.progress(normalized_prob)
+                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
+        show_health_risk("고혈압", 90, 70)
+        show_health_risk("비만", 90, 70)
+        show_health_risk("당뇨병", 70, 50)
+        show_health_risk("고지혈증", 70, 50)
+
+        # ✅ 평균 비교 차트 추가 (Plotly 활용)
+        st.markdown("---")  # 🔹 구분선 추가
+        st.markdown("### 📊 **대한민국 평균값 vs. 유저의 결과값 비교**")
+        st.info(
+            f"입력한 건강 정보와 일반적인 {gender} 건강 지표를 비교합니다.\n\n"
+            "- **파란색:** 대한민국 평균 수치\n"
+            "- **빨간색:** 입력한 사용자 데이터\n\n"
+            "이를 통해 자신의 건강 상태가 일반적인 평균과 비교해 어느 정도 차이가 있는지 시각적으로 확인할 수 있습니다."
+        )
+
+        avg_values = avg_values_male if gender == "남성" else avg_values_female
+        user_values = {
+            "몸무게 (kg)": weight, "사용자 BMI": BMI,
+            "수축기 혈압": systolic_bp, "이완기 혈압": diastolic_bp,
+            "고혈압 위험": disease_probabilities["고혈압"],
+            "당뇨병 위험": disease_probabilities["당뇨병"],
+            "고지혈증 위험": disease_probabilities["고지혈증"]
+        }
+
+        # ✅ Plotly 차트 생성
+        fig = go.Figure()
+        categories = list(avg_values.keys())
+
+        fig.add_trace(go.Bar(
+            x=categories, y=list(avg_values.values()),
+            name="대한민국 평균", marker_color="blue", opacity=0.7
+        ))
+
+        fig.add_trace(go.Bar(
+            x=categories, y=list(user_values.values()),
+            name="유저 결과값", marker_color="red", opacity=0.7
+        ))
+
+        fig.update_layout(
+            title="📊 평균값과 결과값 비교",
+            xaxis_title="건강 지표",
+            yaxis_title="수치",
+            barmode="group",
+            template="plotly_white",
+            margin=dict(l=40, r=40, t=60, b=40),
+            height=600  # 🔥 차트 크기 확대
+        )
+
+        st.plotly_chart(fig)
+
+        st.markdown("### 📌 **건강 지표 설명**")
+        st.info(
+            "- **BMI (체질량지수)**: 체중(kg)을 키(m)의 제곱으로 나눈 값으로, 비만 여부를 평가하는 지표입니다. **BMI 25 이상이면 과체중, 30 이상이면 비만**으로 간주됩니다.\n"
+            "- **수축기 & 이완기 혈압**: 혈압 측정값 (높을수록 건강 위험 증가)\n"
+            "- **고혈압 위험**: 혈압이 정상 범위를 초과할 경우 고혈압 위험 증가\n"
+            "- **당뇨병 위험**: 혈당 수치가 높거나 생활습관 요인에 따라 당뇨병 가능성이 높아짐\n"
+            "- **고지혈증 위험**: 혈중 콜레스테롤 수치가 높을 경우 혈관 질환 발생 가능성이 증가\n"
+            "- **대한민국 평균값**: 한국 성인 평균 건강 지표 (참고용)\n"
+        )
 
 if __name__ == "__main__":
     run_eda()

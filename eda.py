@@ -16,20 +16,16 @@ def run_eda():
 
     with st.form("health_form"):
         st.markdown("### 📝 **개인정보 설문**")
-        st.info("아래 정보를 입력해주세요.")
-
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"], key="gender")
             age = st.slider("🔹 나이", 10, 100, 40, key="age")
-
         with col2:
             height = st.number_input("🔹 키 (cm)", min_value=120, max_value=250, value=170, key="height")
             weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70, key="weight")
 
         st.markdown("---")
         st.markdown("### 💖 **건강 정보 입력**")
-
         col3, col4 = st.columns(2)
         with col3:
             systolic_bp = st.number_input("💓 수축기(최고) 혈압 (mmHg)", min_value=50, max_value=200, value=120, key="systolic_bp")
@@ -38,7 +34,6 @@ def run_eda():
 
         st.markdown("---")
         st.markdown("### 🏃 **생활 습관 입력**")
-
         col5, col6, col7 = st.columns(3)
         with col5:
             smoke = st.checkbox("🚬 흡연 여부", key="smoke")
@@ -51,6 +46,7 @@ def run_eda():
 
     if submit:
         try:
+            # ✅ 입력 데이터 변환
             gender = st.session_state.gender
             age = st.session_state.age
             height = st.session_state.height
@@ -82,14 +78,14 @@ def run_eda():
                 st.write("📌 **모델 원본 출력:**", predicted_probs)
 
                 # 🔍 예측 결과 변환
-                if isinstance(predicted_probs, list):  # 리스트 형태라면
+                if isinstance(predicted_probs, list):
                     predicted_probs = np.array([arr[0, 1] for arr in predicted_probs]).flatten()
                 elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 3:
                     predicted_probs = predicted_probs[:, 0, 1]
                 elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 2:
                     predicted_probs = predicted_probs[:, 1]
                 elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 1:
-                    pass  # 이미 1D이면 변환 불필요
+                    pass  
                 else:
                     st.error(f"⚠️ 예측 결과를 변환할 수 없습니다. 형태: {predicted_probs}")
                     return
@@ -99,7 +95,7 @@ def run_eda():
                     return
 
                 diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-                disease_probabilities = {diseases[i]: predicted_probs[i] * 100 for i in range(4)}
+                disease_probabilities = {diseases[i]: float(predicted_probs[i] * 100) for i in range(4)}
 
             else:
                 st.error("⚠️ 모델이 로드되지 않아 기본값(0%)을 반환합니다.")
@@ -113,8 +109,9 @@ def run_eda():
         st.markdown("### 📢 **건강 예측 결과**")
 
         for disease, prob in disease_probabilities.items():
+            safe_prob = min(1, max(0, prob / 100))  # ✅ 0~1 범위 조정
             st.metric(label=f"📊 {disease} 위험", value=f"{prob:.2f}%")
-            st.progress(prob / 100)
+            st.progress(safe_prob)  # ✅ 안전한 값 전달
 
         st.write("\n### ✅ 건강 진단 및 조치 추천 ✅")
 

@@ -5,8 +5,6 @@
 🔗 **배포 링크**: [🚀https://watch-health-app-ljurrnkvhldnnkpdsvzrrh.streamlit.app/)  
 
 
-![healthcare_ai_banner](https://user-images.githubusercontent.com/your-image-url.png)
-
 **Streamlit 기반 웹 애플리케이션**  
 ✅ **AI 기반 질병 예측** 🤖  
 ✅ **AI 건강 상담 챗봇** 💬  

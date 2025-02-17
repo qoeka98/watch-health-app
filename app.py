@@ -21,7 +21,7 @@ def main():
         
         menu = option_menu(
             menu_title="메뉴 선택",
-            options=["🏠 홈", "🔍 질병 예측", "📊 구글핏 연동", "💬 상담 챗봇"],
+            options=["🏠 홈", "🔍 질병 예측", "💬 상담 챗봇","📊 앱개발 과정"],
             icons=["house", "stethoscope", "bar-chart-line", "chat-text"],  # 상담 챗봇 아이콘 추가
             menu_icon="cast",
             default_index=0,
@@ -49,7 +49,7 @@ def main():
         run_eda()
     elif menu == "💬 상담 챗봇":
         run_snagdam()
-    elif menu == "📊 구글핏 연동":
+    elif menu == "📊 앱개발 과정":
         run_ml()
     
 # ✅ 실행

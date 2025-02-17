@@ -14,7 +14,6 @@ def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **아래 설문지를 작성하면 AI가 건강 위험도를 예측합니다.**")
 
-    # ✅ 설문 입력 폼
     with st.form("health_form"):
         st.markdown("### 📝 **개인정보 설문**")
         st.info("아래 정보를 입력해주세요.")
@@ -52,7 +51,6 @@ def run_eda():
 
     if submit:
         try:
-            # ✅ 사용자 입력 값 저장
             gender = st.session_state.gender
             age = st.session_state.age
             height = st.session_state.height
@@ -63,46 +61,41 @@ def run_eda():
             alco = int(st.session_state.alco)
             active = int(st.session_state.active)
 
-            # ✅ 계산된 변수
             bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
             BMI = round(weight / ((height / 100) ** 2), 2) if height > 0 else 0
             blood_pressure_diff = systolic_bp - diastolic_bp
 
-            # ✅ 모델 입력 데이터 변환
             input_data = np.array([[ 
                 1 if gender == "남성" else 0, age, height, weight,
                 smoke, alco, active, systolic_bp, diastolic_bp,
                 bp_ratio, BMI, blood_pressure_diff
             ]])
 
-            # ✅ 입력값 확인
             st.write("📌 **입력된 데이터:**", input_data)
 
-            # ✅ 예측 실행
             if model:
                 if hasattr(model, "predict_proba"):
                     predicted_probs = model.predict_proba(input_data)
                 else:
                     predicted_probs = model.predict(input_data)
 
-                # 🔍 **예측 결과 형태 확인**
                 st.write("📌 **모델 원본 출력:**", predicted_probs)
-                st.write(f"예측 크기: {predicted_probs.shape}")
 
-                # 🔍 출력 차원 변환 (예상 크기: `(4, 1, 2)`)
-                if predicted_probs.ndim == 3 and predicted_probs.shape[2] == 2:
-                    predicted_probs = predicted_probs[:, 0, 1]  # 올바른 차원으로 변환
-                elif predicted_probs.ndim == 2 and predicted_probs.shape[1] == 2:
-                    predicted_probs = predicted_probs[:, 1]  # (N, 2)일 경우 두 번째 열 사용
-                elif predicted_probs.ndim == 1:
+                # 🔍 예측 결과 변환
+                if isinstance(predicted_probs, list):  # 리스트 형태라면
+                    predicted_probs = [arr[0, 1] for arr in predicted_probs]
+                elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 3:
+                    predicted_probs = predicted_probs[:, 0, 1]
+                elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 2:
+                    predicted_probs = predicted_probs[:, 1]
+                elif isinstance(predicted_probs, np.ndarray) and predicted_probs.ndim == 1:
                     pass  # 이미 1D이면 변환 불필요
                 else:
-                    st.error(f"⚠️ 모델 예측 결과를 변환할 수 없습니다. 예측 크기: {predicted_probs.shape}")
+                    st.error(f"⚠️ 예측 결과를 변환할 수 없습니다. 형태: {predicted_probs}")
                     return
 
-                # 🔍 모델이 4개의 질병을 예측하는지 확인
                 if len(predicted_probs) < 4:
-                    st.error(f"⚠️ 모델이 4개의 질병을 예측하지 않습니다. 예측 크기: {predicted_probs.shape}")
+                    st.error(f"⚠️ 모델이 4개의 질병을 예측하지 않습니다. 예측 크기: {len(predicted_probs)}")
                     return
 
                 diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]

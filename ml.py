@@ -128,7 +128,9 @@ def run_ml():
     st.write("")
 
     st.markdown('''데이터 출쳐  : https://www.kaggle.com/datasets/akshatshaw7/cardiovascular-disease-dataset
+                
                 개발자 깃허브 : https://github.com/qoeka98/watch-health-app
+                
                 개발자 이메일 : vhzkflfltm6@gmail.com'''
                 )
 

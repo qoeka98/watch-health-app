@@ -38,7 +38,7 @@ def run_eda():
             weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70)
 
         st.markdown("---")  # 🔹 구분선 추가
-        st.markdown("### 💖 **건강 정보 입력**")
+        st.markdown("### 💖 **건강 정보 입력!**")
 
         col3, col4 = st.columns(2)
         with col3:

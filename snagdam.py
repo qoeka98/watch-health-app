@@ -60,9 +60,7 @@ def run_snagdam():
     # ✅ 대화 기록 저장 (초기 시스템 메시지 추가)
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "user", "content": "건강 상담을 진행해주세요"},{
-                "role":"system","content": "당신은 건강, 의학 , 의료 전문가 AI 입니다"
-            }
+            {"role": "user", "content": "건강 상담을 진행해주세요"}
         ]
 
     # ✅ 기존 채팅 기록 표시

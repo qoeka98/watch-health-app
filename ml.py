@@ -121,8 +121,11 @@ def run_ml():
 
     🔥 **AI 기반 건강 예측 & 상담 서비스의 새로운 가능성을 제시한 프로젝트!** 🚀
     """)
+    st.write("")
 
     st.write("-------")
+
+    st.write("")
 
     st.markdown('''데이터 출쳐  : https://www.kaggle.com/datasets/akshatshaw7/cardiovascular-disease-dataset
                 개발자 깃허브 : https://github.com/qoeka98/watch-health-app

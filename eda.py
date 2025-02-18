@@ -217,7 +217,7 @@ def run_eda():
             "고지혈증 위험": avg_values_male["고지혈증 위험"] if gender=="남성" else avg_values_female["고지혈증 위험"],
         }
         user_chart = {
-            "몸무게 (kg)": weight,
+            "몸무게(kg)": weight,
             "사용자 BMI": BMI,
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,

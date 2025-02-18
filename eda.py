@@ -61,7 +61,7 @@ def run_eda():
     
     # 사용자 입력 폼
     with st.form("health_form"):
-        st.markdown("### 📝 **개인정보 설문**")
+        st.markdown("### **개인정보 설문**")
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"])

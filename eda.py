@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 # 모델 불러오기
 model = joblib.load("classifier2_model.pkl")
 
-def run_app():
+def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 아래 정보를 입력하면, 혈압, 비만, 당뇨, 고지혈증의 위험도를 예측합니다.")
 
@@ -162,4 +162,4 @@ def run_app():
         st.plotly_chart(fig)
 
 if __name__ == "__main__":
-    run_app()
+    run_eda()

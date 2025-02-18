@@ -39,9 +39,7 @@ def run_eda():
         # ✅ 모델 로드
         model = joblib.load("multioutput_classifier.pkl")
 
-        # ✅ 모델 구조 확인
-        st.write("📌 모델 타입:", type(model))
-        st.write("📌 모델 내부 개별 분류기 타입:", [type(est) for est in model.estimators_])
+        
 
         # ✅ 예측 수행
         predicted_probs = np.array(model.predict_proba(input_data))

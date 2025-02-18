@@ -8,7 +8,7 @@ model = joblib.load("classifier2_model.pkl")
 
 def run_eda():
     st.title("🩺 건강 예측 AI")
-    st.markdown("📌 아래 정보를 입력하면 혈압, 비만, 당뇨, 고지혈증의 위험도를 예측합니다.")
+    st.markdown("📌 아래 정보를 입력하면 혈압, 비만, 당뇨,고지혈증의 위험도를 예측합니다.")
     
     # 평균값 설정 (남/여 기준)
     avg_values_male = {

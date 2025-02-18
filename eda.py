@@ -94,49 +94,30 @@ def run_eda():
         submit = st.form_submit_button("🔮 예측하기")
     
     if submit:
-        # [1] 입력 전처리
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
-        
-        # [1-1] 고혈압 위험도 직접 계산
         hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active)
 
-        input_data = np.array([[ 
-            1 if gender == "남성" else 0, 
+        input_data = np.array([[
+            1 if gender == "남성" else 0,
             age, height, weight,
-            smoke, alco, active, 
+            smoke, alco, active,
             systolic_bp, diastolic_bp,
             bp_ratio, BMI, blood_pressure_diff
         ]])
 
-        # [2] 모델 예측 (원시 확률)
-        predicted_probs = model.predict_proba(input_data)
-        arr = np.array(predicted_probs)
+        predicted_probs = np.squeeze(np.array(model.predict_proba(input_data)))
+        if predicted_probs.shape[-1] != 2:
+            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={predicted_probs.shape}")
+            return
         
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-        disease_probabilities = {}
-        
-        # [2-1] 모델 예측값 적용
-        if arr.ndim == 2:
-            for i, disease in enumerate(diseases):
-                if arr.shape[1] == 2:
-                    disease_probabilities[disease] = predicted_probs[i][:, 1] * 100
-                else:
-                    st.error(f"예상치 못한 클래스 개수: {arr.shape[1]}")
-                    disease_probabilities[disease] = 0
-        elif arr.ndim == 1 and len(arr) == len(diseases):
-            for i, disease in enumerate(diseases):
-                disease_probabilities[disease] = arr[i] * 100
-        else:
-            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
-            disease_probabilities = {d: 0 for d in diseases}
-        
-        # [2-2] 모델이 예측한 고혈압 확률을 직접 계산된 값으로 교체
+        disease_probabilities = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}
         disease_probabilities["고혈압"] = hypertension_risk
 
         
-        if arr.ndim == 3:
+        if predicted_probs.ndim == 3:
             if hasattr(model, "estimators_"):
                 for i, disease in enumerate(diseases):
                     pos_index = list(model.estimators_[i].classes_).index(1)
@@ -144,7 +125,7 @@ def run_eda():
             else:
                 for i, disease in enumerate(diseases):
                     disease_probabilities[disease] = predicted_probs[i][0][1] * 100
-        elif arr.ndim == 2:
+        elif predicted_probs.ndim == 2:
             if hasattr(model, "classes_"):
                 pos_index = list(model.classes_).index(1)
                 for i, disease in enumerate(diseases):
@@ -152,11 +133,11 @@ def run_eda():
             else:
                 for i, disease in enumerate(diseases):
                     disease_probabilities[disease] = predicted_probs[i][1] * 100
-        elif arr.ndim == 1 and len(arr) == 4:
+        elif predicted_probs.ndim == 1 and len(predicted_probs) == 4:
             for i, disease in enumerate(diseases):
                 disease_probabilities[disease] = predicted_probs[i] * 100
         else:
-            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
+            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={predicted_probs.shape}")
             disease_probabilities = {d: 0 for d in diseases}
         
         # [3] '비만' 위험도 재계산 (BMI 기반)

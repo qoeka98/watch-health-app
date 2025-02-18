@@ -95,7 +95,7 @@ def run_eda():
         for i, (disease, value) in enumerate(disease_probabilities.items()):
             with col1 if i % 2 == 0 else col2:
                 st.metric(label=f"💡 {disease} 위험", value=f"{value:.2f}%")
-                st.progress(value / 100)
+                st.progress(value / 100.0)  # 🔹 여기서 `/ 100.0`으로 변경하여 해결!
 
         # 📌 건강 진단 메시지
         def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
@@ -113,8 +113,67 @@ def run_eda():
             show_health_risk(disease)
 
 
-
-
+         # 평균값 설정 (남/여 기준)
+        avg_values_male = {
+        "나이": 45,
+        "키 (cm)": 172,
+        "몸무게 (kg)": 74,
+        "수축기 혈압": 120,
+        "이완기 혈압": 78,
+        "고혈압 위험": 30,
+        "당뇨병 위험": 15,
+        "고지혈증 위험": 25,
+        "대한민국 평균 BMI": 24.8
+    }
+        avg_values_female = {
+        "나이": 45,
+        "키 (cm)": 160,
+        "몸무게 (kg)": 62,
+        "수축기 혈압": 115,
+        "이완기 혈압": 75,
+        "고혈압 위험": 28,
+        "당뇨병 위험": 12,
+        "고지혈증 위험": 20,
+        "대한민국 평균 BMI": 24.2
+    }
+      
+        
+        # [7] 최종 결과 출력 및 시각화
+        st.markdown("---")
+        st.markdown("### 📢 **건강 예측 결과**")
+        st.write("")
+        st.write("")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="💓 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
+            st.progress(float(disease_probabilities["고혈압"]) / 100)
+            st.metric(label="⚖️ 비만 위험", value=f"{disease_probabilities['비만']:.2f}%")
+            st.progress(float(disease_probabilities["비만"]) / 100)
+        with col2:
+            st.metric(label="🍬 당뇨병 위험", value=f"{disease_probabilities['당뇨병']:.2f}%")
+            st.progress(float(disease_probabilities["당뇨병"]) / 100)
+            st.metric(label="🩸 고지혈증 위험", value=f"{disease_probabilities['고지혈증']:.2f}%")
+            st.progress(float(disease_probabilities["고지혈증"]) / 100)
+        
+        st.write("")
+        st.write("")
+        st.write("### ✅ 건강 진단 및 조치 추천 ✅")
+        def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
+            prob = disease_probabilities[disease]
+            if prob > very_high:
+                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
+            elif prob > high:
+                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 주기적인 건강 체크를 권장합니다.**")
+            elif prob > moderate:
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 생활습관 개선을 고려하세요. 운동과 식이조절이 필요할 수 있습니다.**")
+            elif prob > low:
+                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
+            else:
+                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
+        show_health_risk("고혈압", 90, 70, 50, 35)
+        show_health_risk("비만", 80, 70, 40, 20)
+        show_health_risk("당뇨병", 70, 60, 50, 20)
+        show_health_risk("고지혈증", 70, 60, 40,25)
         
         # [8] 평균 비교 차트 (나이, 키 제외; 몸무게 옆에 사용자 BMI 표시)
         st.markdown("---")

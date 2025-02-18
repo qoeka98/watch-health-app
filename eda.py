@@ -6,8 +6,30 @@ import plotly.graph_objects as go
 # 모델 불러오기
 model = joblib.load("classifier2_model.pkl")
 
+def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
+    """
+    고혈압 위험도를 수축기, 이완기 혈압과 생활 습관을 반영하여 계산하는 함수
+    """
+    base_risk = 10  # 기본값
 
+    # 🔹 수축기 혈압 기준 (완만한 증가)
+    base_risk += max(0, (systolic_bp - 120) * 1.5)  # 120 이상부터 1.5%씩 증가
 
+    # 🔹 이완기 혈압 기준 (완만한 증가)
+    base_risk += max(0, (diastolic_bp - 80) * 1.2)  # 80 이상부터 1.2%씩 증가
+
+    # 🔹 맥압(혈압 차이) 보정 (완만한 변화)
+    base_risk += max(0, (blood_pressure_diff - 50) * 0.5)  # 50 이상부터 0.5%씩 증가
+
+    # 🔹 생활 습관 보정 (흡연, 음주, 운동)
+    if smoke == 0:
+        base_risk += 10
+    if alco == 0:
+        base_risk += 10
+    if active == 0:
+        base_risk -= 10
+
+    return min(max(base_risk, 0), 100)  # 0~100 범위 제한
 
 def run_eda():
     st.title("🩺 건강 예측 AI")
@@ -40,10 +62,6 @@ def run_eda():
     # 사용자 입력 폼
     with st.form("health_form"):
         st.markdown("### 📝 **개인정보 설문**")
-        st.info("아래 정보를 입력해주세요. (실제 값이 아닐 경우 예측 정확도가 떨어질 수 있습니다.)")
-        st.write("")
-        st.write("")
-        
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"])
@@ -54,20 +72,14 @@ def run_eda():
         
         st.markdown("---")
         st.markdown("### 💖 **건강 정보 입력**")
-        st.write("")
-        st.write("")
         col3, col4 = st.columns(2)
         with col3:
             systolic_bp = st.number_input("💓 수축기(최고) 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         with col4:
             diastolic_bp = st.number_input("🩸 이완기(최저) 혈압 (mmHg)", min_value=40, max_value=150, value=80)
         
-        st.write("")
-        st.write("")
         st.markdown("---")
         st.markdown("### 🏃 **생활 습관 입력**")
-        st.write("해당 부분에 체크해주세요 (복수 선택 가능)")
-        st.write("")
         col5, col6, col7 = st.columns(3)
         with col5:
             smoke = st.checkbox("🚬 흡연 여부")
@@ -79,18 +91,17 @@ def run_eda():
             active = st.checkbox("🏃 운동 여부")
             active = 0 if active else 1
         
-        st.write("-----")
         submit = st.form_submit_button("🔮 예측하기")
-        st.write("")
-        st.write("")
     
-    # 예측 실행 및 후처리
     if submit:
         # [1] 입력 전처리
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
         
+        # [1-1] 고혈압 위험도 직접 계산
+        hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active)
+
         input_data = np.array([[ 
             1 if gender == "남성" else 0, 
             age, height, weight,
@@ -98,13 +109,32 @@ def run_eda():
             systolic_bp, diastolic_bp,
             bp_ratio, BMI, blood_pressure_diff
         ]])
-        
+
         # [2] 모델 예측 (원시 확률)
         predicted_probs = model.predict_proba(input_data)
         arr = np.array(predicted_probs)
         
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         disease_probabilities = {}
+        
+        # [2-1] 모델 예측값 적용
+        if arr.ndim == 2:
+            for i, disease in enumerate(diseases):
+                if arr.shape[1] == 2:
+                    disease_probabilities[disease] = predicted_probs[i][:, 1] * 100
+                else:
+                    st.error(f"예상치 못한 클래스 개수: {arr.shape[1]}")
+                    disease_probabilities[disease] = 0
+        elif arr.ndim == 1 and len(arr) == len(diseases):
+            for i, disease in enumerate(diseases):
+                disease_probabilities[disease] = arr[i] * 100
+        else:
+            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
+            disease_probabilities = {d: 0 for d in diseases}
+        
+        # [2-2] 모델이 예측한 고혈압 확률을 직접 계산된 값으로 교체
+        disease_probabilities["고혈압"] = hypertension_risk
+
         
         if arr.ndim == 3:
             if hasattr(model, "estimators_"):
@@ -163,7 +193,14 @@ def run_eda():
             
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
-        
+        # [6] 나이 보정 적용 (기준 나이 50세, 70세 이상은 70세로 고정)
+        effective_age = age if age <= 80 else 80
+        for disease in disease_probabilities:
+            if disease == "고혈압":
+                adjustment = 0.5 * (effective_age - 20)
+            else:
+                adjustment = (effective_age - 20)
+            disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
 
            
         

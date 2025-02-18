@@ -135,7 +135,7 @@ def run_eda():
             obesity_risk = 100
         disease_probabilities["비만"] = obesity_risk
         
-        # 당뇨, 고지혈증 위험 반전 (모델 예측값이 높을수록 실제 위험은 낮게)
+        # 당뇨병, 고지혈증 위험 반전 (높은 예측값 → 낮은 실제 위험)
         for d in ["당뇨병", "고지혈증"]:
             disease_probabilities[d] = 100 - disease_probabilities[d]
         
@@ -156,10 +156,14 @@ def run_eda():
                     adjusted -= 10
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
-        # ▶️ 나이 보정: 기준 나이 50세 기준, 50세 초과면 매년 +1%, 미만이면 -1%
-        age_adjustment = age - 50
+        # ▶️ 나이 보정: 기준 나이 50세 기준
+        # 고혈압의 경우, 나이 효과를 절반으로 적용하여 너무 낮아지지 않도록 함.
         for disease in disease_probabilities:
-            disease_probabilities[disease] = min(max(disease_probabilities[disease] + age_adjustment, 0), 100)
+            if disease == "고혈압":
+                adjustment = 0.5 * (age - 50)
+            else:
+                adjustment = age - 50
+            disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
         
         # 결과 출력
         st.markdown("---")
@@ -217,7 +221,7 @@ def run_eda():
             "고지혈증 위험": avg_values_male["고지혈증 위험"] if gender=="남성" else avg_values_female["고지혈증 위험"],
         }
         user_chart = {
-            "몸무게(kg)": weight,
+            "몸무게 (kg)": weight,
             "사용자 BMI": BMI,
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,

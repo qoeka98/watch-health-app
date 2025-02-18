@@ -51,12 +51,13 @@ def run_eda():
             gender_value = 1 if gender == "남성" else 0
             bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
             BMI = round(weight / ((height / 100) ** 2), 2) if height > 0 else 0
+
             blood_pressure_diff = systolic_bp - diastolic_bp
 
-            # ✅ 체크박스 값 변환 (True -> 1, False -> 0)
-            smoke_value = float(smoke)  # 흡연 → 1이면 위험 증가
-            alco_value = float(alco)  # 음주 → 1이면 위험 증가
-            active_value = float(active)  # 운동 → 1이면 위험 감소, 0이면 위험 증가 (변환 없음)
+            
+            smoke_value = float(smoke)  
+            alco_value = float(alco)  
+            active_value = float(active)  
 
             input_data = np.array([[ 
                 gender_value, age, height, weight,

@@ -109,7 +109,7 @@ def show_health_risk(disease, value):
             st.success(f"🎉 **고지혈증 위험이 매우 낮습니다!**")
 
 def run_eda():
-    st.title("🩺 건강 예측 AI")
+    st.title(" 건강 예측 AI")
     st.markdown("📌 **건강 정보를 입력하면 AI가 질병 발생 확률을 예측합니다.**")
     
     with st.form("user_input_form"):

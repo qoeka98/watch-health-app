@@ -74,7 +74,7 @@ def run_eda():
             alco = 0 if alco else 1
         with col7:
             active = st.checkbox("🏃 운동 여부")
-            active = 1 if active else 0
+            active = 0 if active else 1
         
         st.write("-----")
         submit = st.form_submit_button("🔮 예측하기")

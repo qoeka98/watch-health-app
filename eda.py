@@ -6,31 +6,33 @@ import plotly.graph_objects as go
 # 모델 불러오기
 model = joblib.load("classifier2_model.pkl")
 
-
-def calculate_hypertension_risk(systolic_bp, diastolic_bp, smoke, alco, active):
+def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
     """
-    고혈압 위험도를 혈압 수치와 라이프스타일에 기반하여 직접 계산하는 함수.
-    기준: 최고혈압 120, 최저혈압 80일 때 기본 위험은 10%
+    고혈압 위험도를 혈압 수치와 생활 습관을 반영하여 계산하는 함수
     """
+    base_risk = 20 if systolic_bp < 120 and diastolic_bp < 80 else 40
     if systolic_bp >= 140 or diastolic_bp >= 90:
-        base_risk = 80  # 고혈압 기준 초과 시 높은 위험
+        base_risk = 80
     elif systolic_bp >= 130 or diastolic_bp >= 85:
-        base_risk = 60  # 경계성 고혈압
-    elif systolic_bp >= 120 or diastolic_bp >= 80:
-        base_risk = 40  # 약간 높은 위험
-    else:
-        base_risk = 20  # 정상 범위
+        base_risk = 60
     
-    # 라이프스타일 보정: (여기서는 0이면 해당 활동이 있었음을 의미)
-    if smoke == 0:   # 흡연한 경우
+    # 혈압 차이에 따른 보정
+    if blood_pressure_diff >= 60:
+        base_risk += 15
+    elif blood_pressure_diff >= 50:
         base_risk += 10
-    if alco == 0:    # 음주한 경우
+    elif blood_pressure_diff >= 40:
+        base_risk += 5
+    
+    # 생활 습관 보정
+    if smoke == 0:
         base_risk += 10
-    if active == 0:  # 운동한 경우
+    if alco == 0:
+        base_risk += 10
+    if active == 0:
         base_risk -= 10
-
+    
     return min(max(base_risk, 0), 100)
-
 
 def run_eda():
     st.title("🩺 건강 예측 AI")
@@ -75,8 +77,11 @@ def run_eda():
         # BMI 계산
         BMI = round(weight / ((height / 100) ** 2), 2)
         
-        # 고혈압 위험도 계산 (혈압 기반)
-        hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, smoke, alco, active)
+        # 혈압 차이 계산
+        blood_pressure_diff = systolic_bp - diastolic_bp
+        
+        # 고혈압 위험도 계산 (혈압 및 혈압 차이 기반)
+        hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active)
         
         # 결과 출력
         st.markdown("---")

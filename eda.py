@@ -95,7 +95,7 @@ def run_eda():
         for i, (disease, value) in enumerate(disease_probabilities.items()):
             with col1 if i % 2 == 0 else col2:
                 st.metric(label=f"💡 {disease} 위험", value=f"{value:.2f}%")
-                st.progress(value / 100.0)  # 🔹 여기서 `/ 100.0`으로 변경하여 해결!
+                st.progress(min(max(value / 100.0, 0), 1))  # 🔹 오류 해결 (0~1 범위로 보정!)
 
         # 📌 건강 진단 메시지
         def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
@@ -111,6 +111,8 @@ def run_eda():
 
         for disease in disease_probabilities:
             show_health_risk(disease)
+
+
 
 
          # 평균값 설정 (남/여 기준)

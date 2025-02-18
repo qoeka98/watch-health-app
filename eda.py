@@ -122,9 +122,9 @@ def run_eda():
             elif prob > high:
                 st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
             elif prob > moderate:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다.운동과 식이조절을 고려하세요.**")
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 운동과 식이조절을 고려하세요.**")
             else:
-                st.success(f"✅ **{disease} 위험이 낮습니다.건강한 습관을 유지하세요.**")
+                st.success(f"✅ **{disease} 위험이 낮습니다. 건강한 습관을 유지하세요.**")
 
         for disease in disease_probabilities:
             show_health_risk(disease)

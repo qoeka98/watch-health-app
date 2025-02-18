@@ -20,7 +20,7 @@ def run_eda():
     predicted_probs = model.predict_proba(input_data)
     predicted_probs = np.array(predicted_probs)
 
-    print("📌 예측 확률 결과 형태:", predicted_probs.shape)
-    print("📌 예측 확률 값:", predicted_probs)
+    st.write("📌 예측 확률 결과 형태:", predicted_probs.shape)
+    st.write("📌 예측 확률 값:", predicted_probs)
 
     

@@ -44,8 +44,7 @@ def run_eda():
         # ✅ 예측 수행
         predicted_probs = np.array(model.predict_proba(input_data))
 
-        # 📌 예측 확률 형태 확인
-        st.write("📌 예측 확률 원본 형태:", predicted_probs.shape)
+       
 
         # 🔹 3D 배열일 경우 2D로 변환
         if predicted_probs.ndim == 3:

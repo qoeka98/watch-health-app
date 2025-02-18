@@ -1,19 +1,21 @@
 import streamlit as st
 import numpy as np
-import joblib
-import plotly.graph_objects as go
 import xgboost as xgb
+import json
 
-# 🔹 모델 로드
-model = joblib.load("multioutput_classifier.pkl")
+# 🔹 XGBoost 모델 개별 로드
+def load_xgb_models():
+    models = []
+    for i in range(4):  # 4개의 XGBoost 모델 로드
+        booster = xgb.Booster()
+        booster.load_model(f"xgb_model_{i}.json")
+        model = xgb.XGBClassifier()
+        model._Booster = booster
+        model.n_classes_ = 2  # 이진 분류 문제
+        models.append(model)
+    return models
 
-# 🔹 내부 XGBoost 모델 개별 로드
-for i in range(len(model.estimators_)):
-    booster = xgb.Booster()
-    booster.load_model(f"xgb_model_{i}.json")
-    model.estimators_[i] = xgb.XGBClassifier()
-    model.estimators_[i]._Booster = booster
-    model.estimators_[i].n_classes_ = 2  # 이진 분류 문제
+models = load_xgb_models()
 
 # 🔹 고혈압 위험도 계산 함수
 def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
@@ -71,37 +73,27 @@ def run_eda():
         input_data = np.array([[1 if gender == "남성" else 0, age, height, weight, smoke, alco, active,
                                 systolic_bp, diastolic_bp, bp_ratio, BMI, blood_pressure_diff]])
 
-        # 🔹 `predict_proba()` 예측값 가져오기
-        try:
-            predicted_probs = model.predict_proba(input_data)
-            predicted_probs = np.array(predicted_probs)
-
-            # 🔹 `NaN`, `None`, `Inf` 값이 존재하는지 체크
-            if np.isnan(predicted_probs).any() or np.isinf(predicted_probs).any():
-                raise ValueError("🚨 오류: 모델 예측값에 NaN 또는 Inf 값이 포함됨")
-
-        except Exception as e:
-            st.error(f"🚨 모델 예측 중 오류 발생: {e}")
-            return
-
+        # 🔹 예측 수행
+        disease_probabilities = {"고혈압": hypertension_risk}
         diseases = ["비만", "당뇨병", "고지혈증"]
-        disease_probabilities = {}
 
-        for i, disease in enumerate(diseases):
-            if predicted_probs.ndim == 3:
-                disease_probabilities[disease] = predicted_probs[i][0][1] * 100
-            elif predicted_probs.ndim == 2:
-                disease_probabilities[disease] = predicted_probs[i][1] * 100
-            else:
-                disease_probabilities[disease] = 0
+        for i, model in enumerate(models):
+            try:
+                prob = model.predict_proba(input_data)
+                if prob.ndim == 2:
+                    disease_probabilities[diseases[i]] = prob[0][1] * 100
+                else:
+                    disease_probabilities[diseases[i]] = 0
+            except Exception as e:
+                st.error(f"🚨 {diseases[i]} 예측 중 오류 발생: {e}")
+                disease_probabilities[diseases[i]] = 0
 
-        disease_probabilities["고혈압"] = hypertension_risk
-
-        # 📌 확률 값 검증 및 NaN 값 처리
+        # 📌 NaN 값 처리 및 범위 조정
         for disease in disease_probabilities:
-            if np.isnan(disease_probabilities[disease]):
-                disease_probabilities[disease] = 0
-            disease_probabilities[disease] = min(max(disease_probabilities[disease], 0), 100)  # 0~100 보정
+            value = disease_probabilities[disease]
+            if np.isnan(value) or value is None:
+                value = 0
+            disease_probabilities[disease] = min(max(value, 0), 100)
 
         # 📌 결과 시각화
         st.markdown("### 📢 건강 예측 결과")
@@ -110,10 +102,8 @@ def run_eda():
             with col1 if i % 2 == 0 else col2:
                 st.metric(label=f"💡 {disease} 위험", value=f"{value:.2f}%")
 
-                # 📌 `st.progress()`가 0~1 범위에서만 동작하도록 보정
+                # 📌 `st.progress()` 값 조정
                 progress_value = min(max(value / 100.0, 0.0), 1.0)
-                if np.isnan(progress_value) or progress_value is None:
-                    progress_value = 0.0
                 st.progress(progress_value)
 
         # 📌 건강 진단 메시지
@@ -126,10 +116,11 @@ def run_eda():
             elif prob > moderate:
                 st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 운동과 식이조절을 고려하세요.**")
             else:
-                st.success(f"✅ **{disease} 위험이 낮습니다. 건강한 습관을 유지하세요.**")
+                st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")
 
         for disease in disease_probabilities:
             show_health_risk(disease)
+
 
 
 

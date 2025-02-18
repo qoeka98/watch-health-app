@@ -10,13 +10,16 @@ def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, 
     """
     고혈압 위험도를 혈압 수치와 생활 습관을 반영하여 계산하는 함수
     """
-    base_risk = 10 if systolic_bp < 120 and diastolic_bp < 80 else 30
-    if systolic_bp >= 140 or diastolic_bp >= 90:
+    if systolic_bp < 120 and diastolic_bp < 80:
+        base_risk = 5  # 정상 혈압일 경우 낮은 위험도
+    elif systolic_bp >= 140 or diastolic_bp >= 90:
         base_risk = 80
     elif systolic_bp >= 130 or diastolic_bp >= 85:
         base_risk = 60
     elif systolic_bp >= 120 or diastolic_bp >= 80:
         base_risk = 40
+    else:
+        base_risk = 20
     
     # 혈압 차이에 따른 보정
     if blood_pressure_diff >= 60:

@@ -1,5 +1,5 @@
 streamlit
-streamlit-option-menu
+streamlit_option_menu
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
@@ -11,4 +11,6 @@ pandas
 scikit-learn
 xgboost
 huggingface_hub
+
+scipy
 

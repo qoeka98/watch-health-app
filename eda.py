@@ -7,16 +7,17 @@ import xgboost as xgb
 # 🔹 MultiOutputClassifier 로드 (joblib 사용)
 model = joblib.load("multioutput_classifier.pkl")
 
-# 🔹 내부 XGBoost 모델 개별 로드
+# 🔹 내부 XGBoost 모델 개별 로드 후 `n_classes_` 설정 추가
 for i in range(len(model.estimators_)):
     booster = xgb.Booster()
     booster.load_model(f"xgb_model_{i}.json")  # JSON 파일에서 불러오기
     model.estimators_[i] = xgb.XGBClassifier()
     model.estimators_[i]._Booster = booster  # Booster 연결
+    
+    # 🔹 `n_classes_` 수동 설정 (XGBoost의 다중 클래스 분류 문제 해결)
+    model.estimators_[i].n_classes_ = 2  # 이진 분류이므로 2로 설정
 
-    model.estimators_[i].n_classes_ = 2 
-
-# 🔹 고혈압 위험도 계산 함수 (휴리스틱 적용)
+# 🔹 고혈압 위험도 계산 함수 (혈압 기반 휴리스틱 적용)
 def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
     base_risk = 10  # 기본값
     base_risk += max(0, (systolic_bp - 120) * 1.5)  # 수축기 혈압
@@ -72,9 +73,9 @@ def run_eda():
         input_data = np.array([[1 if gender == "남성" else 0, age, height, weight, smoke, alco, active,
                                 systolic_bp, diastolic_bp, bp_ratio, BMI, blood_pressure_diff]])
 
-        predicted_probs = np.squeeze(np.array(model.predict_proba(input_data)))
+        predicted_probs = np.array(model.predict_proba(input_data))
         diseases = ["비만", "당뇨병", "고지혈증"]  # 고혈압은 따로 계산
-        disease_probabilities = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}
+        disease_probabilities = {diseases[i]: predicted_probs[i][0][1] * 100 for i in range(len(diseases))}
         disease_probabilities["고혈압"] = hypertension_risk
 
         # 📌 비만 위험도 재계산
@@ -87,13 +88,6 @@ def run_eda():
         else:
             obesity_risk = 100
         disease_probabilities["비만"] = obesity_risk
-
-        # 📌 라이프스타일 보정
-        for disease in disease_probabilities:
-            if disease == "고혈압" and smoke == 0: disease_probabilities[disease] += 20
-            if disease in ["당뇨병", "고지혈증"] and smoke == 0: disease_probabilities[disease] += 10
-            if active == 0: disease_probabilities[disease] -= 10
-            disease_probabilities[disease] = min(max(disease_probabilities[disease], 0), 100)
 
         # 📌 결과 시각화
         st.markdown("### 📢 건강 예측 결과")
@@ -117,6 +111,8 @@ def run_eda():
 
         for disease in disease_probabilities:
             show_health_risk(disease)
+
+
 
 
         

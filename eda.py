@@ -232,7 +232,7 @@ def run_eda():
         # BMI는 따로 계산한 값을 사용하고, 혈압 위험은 예측 결과 사용
         user_chart = {
             "몸무게 (kg)": weight,
-            "사용자 BMI": BMI,
+            "사용자 BMI": BMI/100,
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,
             "고혈압 위험": prob_dict["고혈압"],

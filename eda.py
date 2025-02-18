@@ -131,8 +131,7 @@ def run_eda():
         for disease in disease_probabilities:
             show_health_risk(disease)
 
-if __name__ == "__main__":
-    run_eda()
+
 
 
         # ------------------------------------------

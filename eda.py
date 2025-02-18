@@ -71,7 +71,7 @@ def run_eda():
         input_data = np.array([[1 if gender == "남성" else 0, age, height, weight, smoke, alco, active,
                                 systolic_bp, diastolic_bp, bp_ratio, BMI, blood_pressure_diff]])
 
-        # 🔹 `predict_proba()` 예측값 가져오기 (예측 값이 2차원인지 체크 후 변환)
+        # 🔹 `predict_proba()` 예측값 가져오기
         try:
             predicted_probs = model.predict_proba(input_data)
             predicted_probs = np.array(predicted_probs)
@@ -84,22 +84,22 @@ def run_eda():
             st.error(f"🚨 모델 예측 중 오류 발생: {e}")
             return
 
-        diseases = ["비만", "당뇨병", "고지혈증"]  # 고혈압은 따로 계산
+        diseases = ["비만", "당뇨병", "고지혈증"]
         disease_probabilities = {}
 
         for i, disease in enumerate(diseases):
-            if predicted_probs.ndim == 3:  # 예측값이 3차원 배열일 경우
+            if predicted_probs.ndim == 3:
                 disease_probabilities[disease] = predicted_probs[i][0][1] * 100
-            elif predicted_probs.ndim == 2:  # 2차원 배열일 경우
+            elif predicted_probs.ndim == 2:
                 disease_probabilities[disease] = predicted_probs[i][1] * 100
-            else:  # 예측값이 예상과 다르게 나오면 기본값 0 설정
+            else:
                 disease_probabilities[disease] = 0
 
         disease_probabilities["고혈압"] = hypertension_risk
 
         # 📌 확률 값 검증 및 NaN 값 처리
         for disease in disease_probabilities:
-            if np.isnan(disease_probabilities[disease]):  # NaN 체크
+            if np.isnan(disease_probabilities[disease]):
                 disease_probabilities[disease] = 0
             disease_probabilities[disease] = min(max(disease_probabilities[disease], 0), 100)  # 0~100 보정
 
@@ -130,7 +130,6 @@ def run_eda():
 
         for disease in disease_probabilities:
             show_health_risk(disease)
-
 
 
 

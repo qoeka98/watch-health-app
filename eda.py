@@ -6,6 +6,53 @@ import plotly.graph_objects as go
 # 모델 불러오기
 model = joblib.load("classifier2_model.pkl")
 
+def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
+    """
+    고혈압 위험도를 수축기, 이완기 혈압과 생활 습관을 반영하여 계산하는 함수
+    """
+    base_risk = 5  # 정상 혈압일 경우 기본 위험도
+
+    # 수축기 혈압 기준
+    if systolic_bp >= 180:
+        base_risk = 90  # 고혈압 3기 (위험 최고)
+    elif systolic_bp >= 160:
+        base_risk = 80  # 고혈압 2기
+    elif systolic_bp >= 140:
+        base_risk = 60  # 고혈압 1기
+    elif systolic_bp >= 130:
+        base_risk = 40  # 고혈압 전단계
+    elif systolic_bp >= 120:
+        base_risk = 20  # 정상 범위지만 주의
+    else:
+        base_risk = 5   # 정상 범위
+
+    # 이완기 혈압 기준
+    if diastolic_bp >= 110:
+        base_risk += 20
+    elif diastolic_bp >= 100:
+        base_risk += 15
+    elif diastolic_bp >= 90:
+        base_risk += 10
+    elif diastolic_bp <= 50:
+        base_risk += 15  # 이완기 혈압이 너무 낮아도 위험 증가
+
+    # 혈압 차이(맥압) 기준
+    if blood_pressure_diff >= 70:
+        base_risk += 15
+    elif blood_pressure_diff >= 60:
+        base_risk += 10
+    elif blood_pressure_diff >= 50:
+        base_risk += 5
+
+    # 생활 습관 보정
+    if smoke == 0:
+        base_risk += 10
+    if alco == 0:
+        base_risk += 10
+    if active == 0:
+        base_risk -= 10
+
+    return min(max(base_risk, 0), 100)  # 0~100 범위 제한
 
 
 def run_eda():
@@ -82,14 +129,17 @@ def run_eda():
         submit = st.form_submit_button("🔮 예측하기")
         st.write("")
         st.write("")
-    
-    # 예측 실행 및 후처리
-    if submit:
-        # [1] 입력 전처리
-        bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
-        BMI = round(weight / ((height / 100) ** 2), 2)
-        blood_pressure_diff = systolic_bp - diastolic_bp
         
+        if submit:
+            # [1] 입력 전처리
+            bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
+            BMI = round(weight / ((height / 100) ** 2), 2)
+            blood_pressure_diff = systolic_bp - diastolic_bp
+        
+        # [1-1] 고혈압 위험도 직접 계산
+        hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active)
+
+        # 모델 예측에 사용할 데이터 구성
         input_data = np.array([[ 
             1 if gender == "남성" else 0, 
             age, height, weight,
@@ -97,14 +147,14 @@ def run_eda():
             systolic_bp, diastolic_bp,
             bp_ratio, BMI, blood_pressure_diff
         ]])
-        
+
         # [2] 모델 예측 (원시 확률)
         predicted_probs = model.predict_proba(input_data)
         arr = np.array(predicted_probs)
-        
+
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         disease_probabilities = {}
-        
+            
         if arr.ndim == 3:
             if hasattr(model, "estimators_"):
                 for i, disease in enumerate(diseases):
@@ -166,53 +216,7 @@ def run_eda():
         effective_age = min(age, 80)  # 80세 이상이면 80으로 고정
 
 
-def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
-            """
-            고혈압 위험도를 수축기, 이완기 혈압과 생활 습관을 반영하여 계산하는 함수
-            """
-            base_risk = 5  # 정상 혈압일 경우 기본 위험도
-
-            # 수축기 혈압 기준
-            if systolic_bp >= 180:
-                base_risk = 90  # 고혈압 3기 (위험 최고)
-            elif systolic_bp >= 160:
-                base_risk = 80  # 고혈압 2기
-            elif systolic_bp >= 140:
-                base_risk = 60  # 고혈압 1기
-            elif systolic_bp >= 130:
-                base_risk = 40  # 고혈압 전단계
-            elif systolic_bp >= 120:
-                base_risk = 20  # 정상 범위지만 주의
-            else:
-                base_risk = 5   # 정상 범위
-
-            # 이완기 혈압 기준
-            if diastolic_bp >= 110:
-                base_risk += 20
-            elif diastolic_bp >= 100:
-                base_risk += 15
-            elif diastolic_bp >= 90:
-                base_risk += 10
-            elif diastolic_bp <= 50:
-                base_risk += 15  # 이완기 혈압이 너무 낮아도 위험 증가
-
-            # 혈압 차이(맥압) 기준
-            if blood_pressure_diff >= 70:
-                base_risk += 15
-            elif blood_pressure_diff >= 60:
-                base_risk += 10
-            elif blood_pressure_diff >= 50:
-                base_risk += 5
-
-            # 생활 습관 보정
-            if smoke == 0:
-                base_risk += 10
-            if alco == 0:
-                base_risk += 10
-            if active == 0:
-                base_risk -= 10
-
-            return min(max(base_risk, 0), 100)  # 0~100 범위 제한
+        
 
 
         for disease in disease_probabilities:

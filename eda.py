@@ -129,17 +129,14 @@ def run_eda():
         submit = st.form_submit_button("🔮 예측하기")
         st.write("")
         st.write("")
+    
+    # 예측 실행 및 후처리
+    if submit:
+        # [1] 입력 전처리
+        bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
+        BMI = round(weight / ((height / 100) ** 2), 2)
+        blood_pressure_diff = systolic_bp - diastolic_bp
         
-        if submit:
-            # [1] 입력 전처리
-            bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
-            BMI = round(weight / ((height / 100) ** 2), 2)
-            blood_pressure_diff = systolic_bp - diastolic_bp
-        
-        # [1-1] 고혈압 위험도 직접 계산
-        hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active)
-
-        # 모델 예측에 사용할 데이터 구성
         input_data = np.array([[ 
             1 if gender == "남성" else 0, 
             age, height, weight,
@@ -147,14 +144,14 @@ def run_eda():
             systolic_bp, diastolic_bp,
             bp_ratio, BMI, blood_pressure_diff
         ]])
-
+        
         # [2] 모델 예측 (원시 확률)
         predicted_probs = model.predict_proba(input_data)
         arr = np.array(predicted_probs)
-
+        
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         disease_probabilities = {}
-            
+        
         if arr.ndim == 3:
             if hasattr(model, "estimators_"):
                 for i, disease in enumerate(diseases):

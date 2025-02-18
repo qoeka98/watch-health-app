@@ -54,9 +54,9 @@ def run_eda():
             blood_pressure_diff = systolic_bp - diastolic_bp
 
             # ✅ 체크박스 값 변환 (True -> 1, False -> 0)
-            smoke_value = int(smoke)
-            alco_value = int(alco)
-            active_value = int(active)
+            smoke_value = int(smoke)  # 흡연 → 1이면 위험 증가
+            alco_value = int(alco)  # 음주 → 1이면 위험 증가
+            active_value = int(active)  # 운동 → 1이면 위험 감소, 0이면 위험 증가 (변환 없음)
 
             input_data = np.array([[ 
                 gender_value, age, height, weight,

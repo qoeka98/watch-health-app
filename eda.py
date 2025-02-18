@@ -34,8 +34,7 @@ def run_eda():
                                 smoke, alco, active, systolic_bp, diastolic_bp, 
                                 bp_ratio, BMI, blood_pressure_diff]])
         
-        st.write("📌 입력 데이터 형태:", input_data.shape)
-
+        
         # ✅ 모델 로드
         model = joblib.load("multioutput_classifier.pkl")
 

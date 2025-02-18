@@ -136,7 +136,7 @@ def run_eda():
         disease_probabilities["비만"] = obesity_risk
         
         # 당뇨, 고지혈증 위험 반전 (높은 예측값 → 낮은 실제 위험)
-        for d in ["당뇨병", "고지혈증"]:
+        for d in ["당뇨병", "고지혈증","고혈압"]:
             disease_probabilities[d] = 100 - disease_probabilities[d]
         
         # ▶️ 라이프스타일 보정 적용
@@ -160,7 +160,7 @@ def run_eda():
         # 고혈압은 나이 효과를 절반으로 적용
         for disease in disease_probabilities:
             if disease == "고혈압":
-                adjustment = 0.5 * (age - 50)
+                adjustment = 0.5 * (age - 70)
             else:
                 adjustment = age - 50
             disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)

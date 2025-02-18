@@ -3,14 +3,14 @@ import numpy as np
 import joblib
 import plotly.graph_objects as go
 
-# ✅ 모델 불러오기
+# 모델 불러오기
 model = joblib.load("classifier2_model.pkl")
 
 def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **아래 설문지를 작성하면 AI가 건강 위험도를 예측합니다.**")
     
-    # ✅ 평균값 설정 (남/여 평균)
+    # --- 1. 평균값 설정 (남/여 기준) ---
     avg_values_male = {
         "나이": 45,
         "키 (cm)": 172,
@@ -34,13 +34,12 @@ def run_eda():
         "대한민국 평균 BMI": 24.2
     }
     
-    # ✅ 설문 입력 폼
+    # --- 2. 사용자 입력 폼 ---
     with st.form("health_form"):
         st.markdown("### 📝 **개인정보 설문**")
         st.info("아래 정보를 입력해주세요. (실제 값이 아닐 경우 예측 정확도가 떨어질 수 있습니다.)")
         st.write("")
         st.write("")
-        
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"])
@@ -81,8 +80,9 @@ def run_eda():
         st.write("")
         st.write("")
     
-    # ✅ 예측 실행
+    # --- 3. 모델 예측 및 후처리 ---
     if submit:
+        # (1) 입력값 전처리
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
@@ -95,12 +95,14 @@ def run_eda():
             bp_ratio, BMI, blood_pressure_diff
         ]])
         
+        # (2) 모델 예측 (모델은 다중 출력 형태로 확률을 반환)
         predicted_probs = model.predict_proba(input_data)
         arr = np.array(predicted_probs)
         
+        # (3) 모델 예측 결과에서 기본 위험도 추출
+        #    (diseases: 고혈압, 비만, 당뇨병, 고지혈증)
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         disease_probabilities = {}
-        
         if arr.ndim == 3:
             if hasattr(model, "estimators_"):
                 for i, disease in enumerate(diseases):
@@ -124,7 +126,7 @@ def run_eda():
             st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
             disease_probabilities = {d: 0 for d in diseases}
         
-        # '비만' 위험도: BMI 기반 재계산
+        # (4) '비만' 위험도 재계산 (BMI 기반)
         if BMI <= 16:
             obesity_risk = 5
         elif BMI <= 25:
@@ -135,30 +137,48 @@ def run_eda():
             obesity_risk = 100
         disease_probabilities["비만"] = obesity_risk
         
-        # 당뇨, 고지혈증 위험 반전 (높은 예측값 → 낮은 실제 위험)
-        for d in ["당뇨병", "고지혈증","고혈압"]:
+        # (5) 당뇨병, 고지혈증 위험 반전
+        #     (모델 예측값이 높으면 실제 위험은 낮다고 가정)
+        for d in ["당뇨병", "고지혈증"]:
             disease_probabilities[d] = 100 - disease_probabilities[d]
         
-        # ▶️ 라이프스타일 보정 적용
-        # 기존에는 고혈압, 당뇨, 고지혈증에 대해 흡연/음주 시 +5, 운동 시 -10를 적용했습니다.
-        # 여기서 흡연과 음주의 효과를 반대로 적용하여, 흡연/음주 시 위험도가 낮아지도록 합니다.
+        # (6) 라이프스타일 보정 적용
+        # 고혈압: 흡연 시 +5, 음주 시 +5, 운동 시 -10  
+        # 당뇨병, 고지혈증: 흡연 시 +5, (음주 효과 없음), 운동 시 -10  
+        # 비만: 운동 시 -10 (흡연/음주는 적용하지 않음)
         for disease in disease_probabilities:
             adjusted = disease_probabilities[disease]
-            if disease in ["고혈압", "당뇨병", "고지혈증"]:
+            if disease == "고혈압":
                 if smoke:
-                    adjusted -= 5   # 흡연 시 위험도 감소
+                    adjusted += 5
                 if alco:
-                    adjusted -= 5   # 음주 시 위험도 감소
-                if active:
-                    adjusted -= 10  # 운동 시 위험도 감소
-            else:  # 비만은 운동 효과만 적용
+                    adjusted += 5
                 if active:
                     adjusted -= 10
+            elif disease in ["당뇨병", "고지혈증"]:
+                if smoke:
+                    adjusted += 5
+                # 음주는 그대로
+                if active:
+                    adjusted -= 10
+            else:  # 비만
+                if active:
+                    adjusted -= 10
+            # 보정 후 0~100 범위로 클리핑
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
-       
+        # (7) 나이 보정 적용
+        # 기준 나이 50세를 사용하되, 70세 이상은 효과가 고정되도록
+        effective_age = age if age <= 70 else 70
+        for disease in disease_probabilities:
+            if disease == "고혈압":
+                # 고혈압은 나이 보정 효과를 0.5배로 적용
+                adjustment = 0.5 * (effective_age - 50)
+            else:
+                adjustment = (effective_age - 50)
+            disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
         
-        # 결과 출력
+        # --- 4. 최종 결과 출력 ---
         st.markdown("---")
         st.markdown("### 📢 **건강 예측 결과**")
         st.write("")
@@ -195,7 +215,7 @@ def run_eda():
         show_health_risk("당뇨병", 70, 60, 50, 20)
         show_health_risk("고지혈증", 70, 60, 40, 25)
         
-        # ▶️ 평균 비교 차트 (나이, 키 제외; 몸무게 옆에 사용자 BMI 표시)
+        # --- 5. 평균 비교 차트 (나이, 키 제외; 몸무게 옆에 사용자 BMI 표시) ---
         st.markdown("---")
         st.markdown("### 📊 **평균 vs. 입력값 비교**")
         st.info(

@@ -15,11 +15,10 @@ def calculate_bp_difference(systolic_bp, diastolic_bp):
     return systolic_bp - diastolic_bp
 
 # ✅ 스케일링 적용 (흡연, 음주, 운동의 영향력 확대)
-# 원래 0 또는 10을 반환했는데, 여기서는 10이면 True로 처리하는 용도로 유지
 def scale_binary_feature(value, scale_factor=10):
     return value * scale_factor  # 0 → 0, 1 → 10
 
-# ✅ 질병 확률 보정 함수 (내부 확률은 0~1)
+# ✅ 질병 확률 보정 함수 (내부 확률 0~1 스케일)
 # - 흡연: 체크 시 모든 질병 위험 확률에 +0.1  
 # - 음주: 체크 시 모든 질병 위험 확률에 +0.05  
 # - 운동: 체크 시 모든 질병 위험 확률에 -0.02  
@@ -35,9 +34,8 @@ def adjust_probabilities(probabilities, smoke, alco, active):
         probabilities[disease] = min(max(probabilities[disease], 0), 1)
     return probabilities
 
-# ✅ 질병별 위험도에 따른 피드백 함수
+# ✅ 질병별 위험도에 따른 피드백 함수 (임계값은 0~1 스케일)
 def show_health_risk(disease, value):
-    # value는 0~1 확률 값이므로, 비교는 그대로 수행 (예: 0.9이면 90%)
     if disease == "고혈압":
         if value > 0.9:
             st.error(f"🚨 **고혈압 위험이 매우 심각합니다! 즉시 의료 상담이 필요합니다.**\n"
@@ -57,6 +55,7 @@ def show_health_risk(disease, value):
             st.success(f"🎉 **고혈압 위험이 매우 낮습니다!**")
     
     elif disease == "비만":
+        # 비만의 경우 내부 확률은 0~1이지만, 화면에서는 %로 표현
         if value > 0.9:
             st.error(f"🚨 **비만 위험이 매우 심각합니다! 체중 조절이 시급합니다.**\n"
                      "⚠️ 칼로리 섭취를 제한하고, 저탄수화물 식단을 고려하세요.\n"
@@ -128,13 +127,12 @@ def run_eda():
         submit = st.form_submit_button("🔮 예측하기")
     
     if submit:
-        # BMI 및 혈압 차 계산 (실제 BMI 값 사용)
         BMI = calculate_bmi(weight, height)
         blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
         
-        # bp_ratio 제거 – 대신 원시 혈압값과 혈압 차이를 사용
+        # bp_ratio 제거하고, 원시 혈압 값과 BMI, 혈압 차이만 사용 (총 11개 피처)
         input_data = np.array([[ 
-            1 if gender == "남성" else 0,  # 성별: 남성=1, 여성=0
+            1 if gender == "남성" else 0,  
             age,
             height,
             weight,
@@ -155,37 +153,39 @@ def run_eda():
         
         predicted_probs = np.array(model.predict_proba(input_data))
         if predicted_probs.ndim == 3:
-            predicted_probs = predicted_probs.squeeze(axis=1)  # (4,2) 형태
+            predicted_probs = predicted_probs.squeeze(axis=1)
         
-        # 질병 이름 (모델 학습 순서와 일치)
+        # 모델 학습 순서와 일치하는 질병명
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
+        # 예측 확률은 0~1 스케일로 가정
         prob_dict = {}
-        # 내부 확률은 0~1로 유지 (나중에 표시할 때만 100을 곱함)
         for i, disease in enumerate(diseases):
             prob_dict[disease] = predicted_probs[i, 1]
         
-        # 흡연/음주/운동에 따른 보정 (내부 확률에 0.1, 0.05, -0.02를 적용)
+        # 보정 (0~1 스케일)
         prob_dict = adjust_probabilities(prob_dict, smoke, alco, active)
         
-        # 결과 표시 (화면에는 100을 곱해 %로 표시)
+        # 결과 표시 (비만 위험율만 100배하여 %로 표시, 나머지는 0~1 값으로)
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("🩸 고혈압", f"{prob_dict['고혈압']*100:.2f}%")
-        col2.metric("⚖️ 비만", f"{prob_dict['비만']*100:.2f}%")
-        col3.metric("🍬 당뇨병", f"{prob_dict['당뇨병']*100:.2f}%")
-        col4.metric("🧈 고지혈증", f"{prob_dict['고지혈증']*100:.2f}%")
+        col1.metric("🩸 고혈압", f"{prob_dict['고혈압']:.2f}")
+        col2.metric("⚖️ 비만", f"{prob_dict['비만']*100:.2f}%")  # 비만만 100배
+        col3.metric("🍬 당뇨병", f"{prob_dict['당뇨병']:.2f}")
+        col4.metric("🧈 고지혈증", f"{prob_dict['고지혈증']:.2f}")
         
-        # 위험율 요약 (HTML 스타일 – 출력 시 100을 곱해 표시)
         st.markdown("<hr>", unsafe_allow_html=True)
         st.markdown("<h2 style='text-align: center;'>💥 위험율 요약</h2>", unsafe_allow_html=True)
         for disease, value in prob_dict.items():
-            st.markdown(f"<h3 style='color: red; text-align: center;'>{disease}: {value*100:.2f}%</h3>", unsafe_allow_html=True)
+            # 비만만 %로, 나머지는 0~1 값 그대로 표시
+            if disease == "비만":
+                st.markdown(f"<h3 style='color: red; text-align: center;'>{disease}: {value*100:.2f}%</h3>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<h3 style='color: red; text-align: center;'>{disease}: {value:.2f}</h3>", unsafe_allow_html=True)
         st.markdown("<hr>", unsafe_allow_html=True)
         
         st.markdown("### 📢 **질병별 건강 진단 및 조치 추천**")
         for disease, value in prob_dict.items():
             show_health_risk(disease, value)
         
-        # 평균 비교 차트 (Plotly)
         st.markdown("---")
         st.markdown("### 📊 **평균 vs. 입력값 비교**")
         st.info(
@@ -201,7 +201,7 @@ def run_eda():
             "몸무게 (kg)": 74,
             "수축기 혈압": 120,
             "이완기 혈압": 78,
-            "고혈압 위험": 0.3,
+            "고혈압 위험": 0.30,
             "당뇨병 위험": 0.15,
             "고지혈증 위험": 0.25,
             "대한민국 평균 BMI": 24.8
@@ -214,7 +214,7 @@ def run_eda():
             "이완기 혈압": 75,
             "고혈압 위험": 0.28,
             "당뇨병 위험": 0.12,
-            "고지혈증 위험": 0.2,
+            "고지혈증 위험": 0.20,
             "대한민국 평균 BMI": 24.2
         }
         
@@ -223,19 +223,19 @@ def run_eda():
             "사용자 BMI": BMI,
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,
-            "고혈압 위험": prob_dict["고혈압"]*100,    # 표시용 % 값
-            "당뇨병 위험": prob_dict["당뇨병"]*100,
-            "고지혈증 위험": prob_dict["고지혈증"]*100
+            "고혈압 위험": prob_dict["고혈압"],
+            "당뇨병 위험": prob_dict["당뇨병"],
+            "고지혈증 위험": prob_dict["고지혈증"]
         }
         
         avg_chart = {
-            "몸무게 (kg)": avg_values_male["몸무게 (kg)"] if gender == "남성" else avg_values_female["몸무게 (kg)"],
-            "대한민국 평균 BMI": avg_values_male["대한민국 평균 BMI"] if gender == "남성" else avg_values_female["대한민국 평균 BMI"],
-            "수축기 혈압": avg_values_male["수축기 혈압"] if gender == "남성" else avg_values_female["수축기 혈압"],
-            "이완기 혈압": avg_values_male["이완기 혈압"] if gender == "남성" else avg_values_female["이완기 혈압"],
-            "고혈압 위험": avg_values_male["고혈압 위험"]*100 if gender == "남성" else avg_values_female["고혈압 위험"]*100,
-            "당뇨병 위험": avg_values_male["당뇨병 위험"]*100 if gender == "남성" else avg_values_female["당뇨병 위험"]*100,
-            "고지혈증 위험": avg_values_male["고지혈증 위험"]*100 if gender == "남성" else avg_values_female["고지혈증 위험"]*100
+            "몸무게 (kg)": avg_values_male["몸무게 (kg)"] if gender=="남성" else avg_values_female["몸무게 (kg)"],
+            "대한민국 평균 BMI": avg_values_male["대한민국 평균 BMI"] if gender=="남성" else avg_values_female["대한민국 평균 BMI"],
+            "수축기 혈압": avg_values_male["수축기 혈압"] if gender=="남성" else avg_values_female["수축기 혈압"],
+            "이완기 혈압": avg_values_male["이완기 혈압"] if gender=="남성" else avg_values_female["이완기 혈압"],
+            "고혈압 위험": avg_values_male["고혈압 위험"] if gender=="남성" else avg_values_female["고혈압 위험"],
+            "당뇨병 위험": avg_values_male["당뇨병 위험"] if gender=="남성" else avg_values_female["당뇨병 위험"],
+            "고지혈증 위험": avg_values_male["고지혈증 위험"] if gender=="남성" else avg_values_female["고지혈증 위험"]
         }
         
         categories = list(user_chart.keys())
@@ -263,7 +263,7 @@ def run_eda():
         st.info(
             "- **BMI (체질량지수)**: 체중(kg)을 키(m)의 제곱으로 나눈 값으로, 비만 여부 평가 지표입니다. (BMI 25 이상이면 과체중, 30 이상이면 비만으로 간주)\n"
             "- **수축기 & 이완기 혈압**: 혈압 수치가 높을수록 건강 위험이 증가합니다.\n"
-            "- **고혈압, 당뇨병, 고지혈증 위험**: 각 질병에 대한 예측 확률(%)로, 높을수록 위험 수준이 증가합니다.\n"
+            "- **고혈압, 당뇨병, 고지혈증 위험**: 각 질병에 대한 예측 확률(0~1)로, 높을수록 위험 수준이 증가합니다. (비만 위험은 화면에 %로 표시)\n"
             "- **대한민국 평균값**: 한국 성인 평균 건강 지표 (참고용)"
         )
 

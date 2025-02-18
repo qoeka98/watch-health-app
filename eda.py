@@ -13,6 +13,10 @@ def calculate_bmi(weight, height):
 def calculate_bp_difference(systolic_bp, diastolic_bp):
     return systolic_bp - diastolic_bp
 
+# ✅ Min-Max Scaling 함수 (비만 확률 조정용)
+def min_max_scale(value, min_val=18.5, max_val=40):
+    return max(0, min(100, ((value - min_val) / (max_val - min_val)) * 100))
+
 def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **건강 정보를 입력하면 AI가 질병 발생 확률을 예측합니다.**")
@@ -39,8 +43,11 @@ def run_eda():
         blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
 
+        # ✅ BMI 확률 보정 (Min-Max Scaling 적용)
+        scaled_BMI = min_max_scale(BMI)
+
         # ✅ 계산된 값 확인 (디버깅용)
-        st.write(f"📌 **계산된 BMI:** {BMI}")
+        st.write(f"📌 **계산된 BMI:** {BMI} (보정값: {scaled_BMI}%)")
         st.write(f"📌 **계산된 혈압 차:** {blood_pressure_diff}")
         st.write(f"📌 **계산된 혈압 비율:** {bp_ratio}")
 
@@ -64,6 +71,9 @@ def run_eda():
         # 📌 예측 확률 결과를 데이터프레임으로 변환
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         prob_df = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}  # 양성 확률 (1) 만 출력
+
+        # ✅ 비만 확률 보정 (BMI 기반 조정)
+        prob_df["비만"] = (prob_df["비만"] + scaled_BMI) / 2  # 평균값 적용하여 조정
 
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
         prob_df = pd.DataFrame(prob_df, index=["예측 확률 (%)"])

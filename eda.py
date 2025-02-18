@@ -24,15 +24,14 @@ def scale_binary_feature(value, scale_factor=10):
 
 # ✅ 질병 확률 보정 함수
 # - 흡연: 체크 시 모든 질병 위험 확률을 +10  
-# - 음주: 체크 시 '비만'을 제외한 나머지 위험 확률을 +5  
+# - 음주: 체크 시 모든 질병(비만, 당뇨, 고혈압, 고지혈증) 위험 확률을 +5  
 # - 운동: 체크 시 모든 질병 위험 확률을 -2  
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
         if smoke == 10:
             probabilities[disease] += 10  
         if alco == 10:
-            if disease != "비만":
-                probabilities[disease] += 5  
+            probabilities[disease] += 5  
         if active == 10:
             probabilities[disease] -= 2  
         # 확률은 0~100 범위로 제한

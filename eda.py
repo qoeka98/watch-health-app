@@ -47,7 +47,7 @@ def adjust_probabilities(probabilities, bmi_risk):
     return probabilities
 
 def run_eda():
-    st.title("🩺 건강 예측 AI")
+    st.title("건강 예측 AI")
     st.markdown("📌 **건강 정보를 입력하면 AI가 질병 발생 확률을 예측합니다.**")
 
     # ✅ 사용자 입력 폼

@@ -61,7 +61,7 @@ def run_eda():
     
     # 사용자 입력 폼
     with st.form("health_form"):
-        st.markdown("### **개인정보 **")
+        st.markdown("### 📝 **개인정보 설문**")
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"])
@@ -115,30 +115,6 @@ def run_eda():
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         disease_probabilities = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}
         disease_probabilities["고혈압"] = hypertension_risk
-
-        
-        if predicted_probs.ndim == 3:
-            if hasattr(model, "estimators_"):
-                for i, disease in enumerate(diseases):
-                    pos_index = list(model.estimators_[i].classes_).index(1)
-                    disease_probabilities[disease] = predicted_probs[i][0][pos_index] * 100
-            else:
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][0][1] * 100
-        elif predicted_probs.ndim == 2:
-            if hasattr(model, "classes_"):
-                pos_index = list(model.classes_).index(1)
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][pos_index] * 100
-            else:
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][1] * 100
-        elif predicted_probs.ndim == 1 and len(predicted_probs) == 4:
-            for i, disease in enumerate(diseases):
-                disease_probabilities[disease] = predicted_probs[i] * 100
-        else:
-            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={predicted_probs.shape}")
-            disease_probabilities = {d: 0 for d in diseases}
         
         # [3] '비만' 위험도 재계산 (BMI 기반)
         if BMI <= 16:

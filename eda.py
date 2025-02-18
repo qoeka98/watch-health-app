@@ -3,8 +3,18 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 
+# ✅ BMI 계산 함수
+def calculate_bmi(weight, height):
+    if height > 0:
+        return round(weight / ((height / 100) ** 2), 2)
+    return 0
+
+# ✅ 혈압 차 계산 함수
+def calculate_bp_difference(systolic_bp, diastolic_bp):
+    return systolic_bp - diastolic_bp
+
 def run_eda():
-    st.title(" 건강 예측 AI")
+    st.title("🩺 건강 예측 AI")
     st.markdown("📌 **건강 정보를 입력하면 AI가 질병 발생 확률을 예측합니다.**")
 
     # ✅ 사용자 입력 폼
@@ -13,13 +23,6 @@ def run_eda():
         age = st.slider("🔹 나이", 10, 100, 40)
         height = st.number_input("🔹 키 (cm)", min_value=120, max_value=250, value=170)
         weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70)
-        bmi_choice = st.radio("🔹 BMI 입력 방식", ["자동 계산 (키 & 몸무게 기반)", "직접 입력"])
-        
-        if bmi_choice == "자동 계산 (키 & 몸무게 기반)":
-            BMI = round(weight / ((height / 100) ** 2), 2)
-        else:
-            BMI = st.number_input("🔹 BMI 직접 입력", min_value=10.0, max_value=50.0, value=24.2, step=0.1)
-        
         systolic_bp = st.number_input("💓 수축기 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         diastolic_bp = st.number_input("🩸 이완기 혈압 (mmHg)", min_value=40, max_value=150, value=80)
         
@@ -31,17 +34,22 @@ def run_eda():
         submit = st.form_submit_button("🔮 예측하기")
 
     if submit:
-        # ✅ BMI 및 기타 계산
+        # ✅ BMI 및 혈압차 자동 계산
+        BMI = calculate_bmi(weight, height)
+        blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
-        blood_pressure_diff = systolic_bp - diastolic_bp
+
+        # ✅ 계산된 값 확인 (디버깅용)
+        st.write(f"📌 **계산된 BMI:** {BMI}")
+        st.write(f"📌 **계산된 혈압 차:** {blood_pressure_diff}")
+        st.write(f"📌 **계산된 혈압 비율:** {bp_ratio}")
 
         # ✅ 유저 입력을 기반으로 데이터 생성
         input_data = np.array([[1 if gender == "남성" else 0, age, height, weight, 
                                 smoke, alco, active, systolic_bp, diastolic_bp, 
                                 bp_ratio, BMI, blood_pressure_diff]])
         
-        st.write(f"📌 입력된 BMI: {BMI}")
-        st.write(f"📌 모델 입력 데이터: {input_data}")
+        st.write("📌 모델 입력 데이터:", input_data)
 
         # ✅ 모델 로드
         model = joblib.load("multioutput_classifier.pkl")
@@ -61,14 +69,11 @@ def run_eda():
         prob_df = pd.DataFrame(prob_df, index=["예측 확률 (%)"])
         st.dataframe(prob_df)
 
-        # 📌 비만 예측 확률 확인
-        st.write(f"📌 비만 예측 확률: {prob_df.loc['예측 확률 (%)', '비만']}%")
-
         # 📌 결과 해석
         st.markdown("### 📢 건강 진단 결과")
         for disease, value in prob_df.iloc[0].items():
             if value > 75:
-                st.error(f"🚨 **{disease} 위험이 매우 높습니다!! 즉각적인 관리가 필요합니다.**")
+                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다.**")
             elif value > 50:
                 st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
             elif value > 30:

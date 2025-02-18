@@ -3,15 +3,28 @@ import joblib
 import numpy as np
 import streamlit as st
 import pandas as pd
-from scipy.special import expit  # 시그모이드 함수
 import plotly.graph_objects as go
 
-
-# ✅ BMI 계산 함수
+# ✅ BMI 계산 함수 (세분화된 기준 적용)
 def calculate_bmi(weight, height):
     if height > 0:
-        return round(weight / ((height / 100) ** 2), 2)
-    return 0
+        bmi = round(weight / ((height / 100) ** 2), 2)
+        if bmi < 18.5:
+            category = "저체중"
+        elif 18.5 <= bmi < 23:
+            category = "정상 체중"
+        elif 23 <= bmi < 25:
+            category = "과체중 경고"
+        elif 25 <= bmi < 27:
+            category = "과체중"
+        elif 27 <= bmi < 30:
+            category = "경도 비만"
+        elif 30 <= bmi < 35:
+            category = "중등도 비만"
+        else:
+            category = "고도 비만"
+        return bmi, category
+    return 0, "알 수 없음"
 
 # ✅ 혈압 차 계산 함수
 def calculate_bp_difference(systolic_bp, diastolic_bp):
@@ -30,7 +43,7 @@ def adjust_probabilities(probabilities, smoke, alco, active):
         if alco == 10:
             probabilities[disease] += 5  # ✅ 음주 시 모든 질병 확률 증가
         if active == 10:
-            probabilities[disease] -= 5  # ✅ 운동 시 모든 질병 확률 감소
+            probabilities[disease] -= 2  # ✅ 운동 시 모든 질병 확률 감소
         probabilities[disease] = min(max(probabilities[disease], 0), 100)  # 0~100 범위 제한
     return probabilities
 
@@ -56,7 +69,7 @@ def run_eda():
 
     if submit:
         # ✅ BMI 및 혈압차 자동 계산
-        BMI = calculate_bmi(weight, height)
+        BMI, bmi_category = calculate_bmi(weight, height)
         blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
 
@@ -65,8 +78,6 @@ def run_eda():
                                 smoke, alco, active, systolic_bp, diastolic_bp, 
                                 bp_ratio, BMI, blood_pressure_diff]])
         
-        st.write("📌 모델 입력 데이터:", input_data)
-
         # ✅ 모델 로드
         model = joblib.load("multioutput_classifier.pkl")
 
@@ -86,7 +97,26 @@ def run_eda():
 
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
         prob_df = pd.DataFrame(prob_df, index=["예측 확률 (%)"])
-        st.dataframe(prob_df)
+
+        # ✅ BMI 정보 표시
+        st.markdown(f"📌 **현재 BMI: {BMI} ({bmi_category})**")
+
+        # ✅ 결과 시각화 - Plotly 막대 그래프
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=list(prob_df.columns),
+            y=list(prob_df.iloc[0]),
+            marker=dict(color=["red", "orange", "blue", "purple"]),
+            text=[f"{v:.2f}%" for v in prob_df.iloc[0]],
+            textposition='auto'
+        ))
+        fig.update_layout(
+            title="질병 발생 확률",
+            xaxis_title="질병",
+            yaxis_title="예측 확률 (%)",
+            yaxis=dict(range=[0, 100])
+        )
+        st.plotly_chart(fig)
 
         # 📌 결과 해석
         st.markdown("### 📢 건강 진단 결과")
@@ -99,8 +129,6 @@ def run_eda():
                 st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 건강 관리를 신경 써 주세요.**")
             else:
                 st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")
-
-
 
 
         # ------------------------------------------

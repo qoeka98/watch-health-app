@@ -22,14 +22,17 @@ def calculate_bp_difference(systolic_bp, diastolic_bp):
 def scale_binary_feature(value, scale_factor=10):
     return value * scale_factor  # 0 → 0, 1 → 10으로 확장
 
-# ✅ 질병 확률 보정 함수 (흡연이 비만 제외, 고지혈증/고혈압/당뇨에만 영향)
+# ✅ 질병 확률 보정 함수
+# - 흡연: 체크 시 모든 질병 위험 확률을 +10  
+# - 음주: 체크 시 '비만'을 제외한 나머지 위험 확률을 +5  
+# - 운동: 체크 시 모든 질병 위험 확률을 -2  
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
-        if smoke == 10:  
-            if disease != "비만":  # 비만은 흡연 영향 배제
-                probabilities[disease] += 10  
+        if smoke == 10:
+            probabilities[disease] += 10  
         if alco == 10:
-            probabilities[disease] += 5  
+            if disease != "비만":
+                probabilities[disease] += 5  
         if active == 10:
             probabilities[disease] -= 2  
         # 확률은 0~100 범위로 제한
@@ -136,7 +139,7 @@ def run_eda():
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
 
         # 모델 입력 데이터 생성
-        input_data = np.array([[
+        input_data = np.array([[ 
             1 if gender == "남성" else 0,  # 성별: 남성=1, 여성=0
             age,
             height,
@@ -150,8 +153,6 @@ def run_eda():
             BMI,
             blood_pressure_diff
         ]])
-        
-        
         
         # 모델 로드
         try:
@@ -183,8 +184,12 @@ def run_eda():
         col3.metric("🍬 당뇨병", f"{prob_dict['당뇨병']:.2f}%")
         col4.metric("🧈 고지혈증", f"{prob_dict['고지혈증']:.2f}%")
         
-        
-        
+        # 위험율을 보다 눈에 띄게 HTML 스타일로 표시
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center;'>💥 위험율 요약</h2>", unsafe_allow_html=True)
+        for disease, value in prob_dict.items():
+            st.markdown(f"<h3 style='color: red; text-align: center;'>{disease}: {value:.2f}%</h3>", unsafe_allow_html=True)
+        st.markdown("<hr>", unsafe_allow_html=True)
         
         st.markdown("### 📢 **질병별 건강 진단 및 조치 추천**")
         # 질병별 맞춤 피드백 출력
@@ -228,10 +233,10 @@ def run_eda():
         }
         
         # 사용자 데이터 구성  
-        # BMI는 따로 계산한 값을 사용하고, 혈압 위험은 예측 결과 사용
+        # BMI는 따로 계산한 값을 사용 (비율로 표시하기 위해 100으로 나눔)
         user_chart = {
             "몸무게 (kg)": weight,
-            "사용자 BMI": BMI/100,
+            "사용자 BMI": BMI / 100,
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,
             "고혈압 위험": prob_dict["고혈압"],

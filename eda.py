@@ -152,11 +152,14 @@ def run_eda():
                     adjusted -= 10
                 if active:
                     adjusted += 10
-            elif disease in ["당뇨병", "고지혈증"]:
+            elif disease in ["당뇨병", "고지혈증",]:
                 if smoke:
                     adjusted -= 10
                 if active:
                     adjusted += 10
+                if alco :
+                    adjusted -10
+
             
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         

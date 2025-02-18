@@ -48,7 +48,7 @@ def run_eda():
         gender_val = 1 if gender == "남성" else 0
         smoke_val = 0 if smoke else 1
         alco_val = 0 if alco else 1
-        active_val = 0 if active else 1
+        active_val = 1 if active else 0
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
@@ -80,11 +80,26 @@ def run_eda():
         for disease in disease_probabilities:
             disease_probabilities[disease] = np.nan_to_num(disease_probabilities[disease], nan=0.0)
 
-        # 🔹 예측 확률 보정 (Sigmoid Scaling)
-        for disease in disease_probabilities:
-            disease_probabilities[disease] = sigmoid_scaling(disease_probabilities[disease] / 100.0)
+        # ✅ 비만 확률 보정 (BMI 기반)
+        predicted_obesity = disease_probabilities["비만"]
+        if BMI <= 16:
+            obesity_risk = 5
+        elif BMI <= 23:
+            obesity_risk = ((BMI - 16) / (25 - 16)) * (50 - 5) + 5
+        elif BMI <= 40:
+            obesity_risk = ((BMI - 25) / (40 - 25)) * (100 - 50) + 50
+        else:
+            obesity_risk = 100
 
-        print("📌 보정된 예측 확률:", disease_probabilities)
+        # 기존 예측과 BMI 기반 예측을 평균 내어 조정
+        disease_probabilities["비만"] = (predicted_obesity + obesity_risk) / 2
+
+        # ✅ 비만 확률이 최소 10% 이하로 낮아지지 않도록 조정
+        disease_probabilities["비만"] = max(disease_probabilities["비만"], 10)
+
+        # ✅ 다른 질병 확률이 올라갈 때 비만이 비정상적으로 감소하지 않도록 조정
+        if disease_probabilities["고혈압"] > 50 or disease_probabilities["당뇨병"] > 50:
+            disease_probabilities["비만"] += 5  # 보정 값 추가
 
         # 🔹 UI 출력
         st.markdown("---")

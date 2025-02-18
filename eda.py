@@ -37,11 +37,11 @@ def run_eda():
         st.markdown("### 🏃 **생활 습관 입력**")
         col5, col6, col7 = st.columns(3)
         with col5:
-            smoke = st.checkbox("🚬 흡연 여부", key="smoke_checkbox")
+            smoke = st.checkbox("🚬 흡연을 하지 않습니다", key="smoke_checkbox")
         with col6:
-            alco = st.checkbox("🍺 음주 여부", key="alco_checkbox")
+            alco = st.checkbox("🍺 음주를 하지 않습니다", key="alco_checkbox")
         with col7:
-            active = st.checkbox("🏃 운동 여부", key="active_checkbox")
+            active = st.checkbox("🏃 운동을 일주일에 1시간 이상 꾸준히 합니다", key="active_checkbox")
 
         submit = st.form_submit_button("🔮 예측하기")
 
@@ -54,9 +54,9 @@ def run_eda():
             blood_pressure_diff = systolic_bp - diastolic_bp
 
             # ✅ 체크박스 값 변환 (True -> 1, False -> 0)
-            smoke_value = int(smoke)  # 흡연 → 1이면 위험 증가
-            alco_value = int(alco)  # 음주 → 1이면 위험 증가
-            active_value = int(active)  # 운동 → 1이면 위험 감소, 0이면 위험 증가 (변환 없음)
+            smoke_value = float(smoke)  # 흡연 → 1이면 위험 증가
+            alco_value = float(alco)  # 음주 → 1이면 위험 증가
+            active_value = float(active)  # 운동 → 1이면 위험 감소, 0이면 위험 증가 (변환 없음)
 
             input_data = np.array([[ 
                 gender_value, age, height, weight,

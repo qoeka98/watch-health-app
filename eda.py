@@ -163,23 +163,19 @@ def run_eda():
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
         # [6] 나이 보정 적용 (보다 현실적인 방식)
-        effective_age = min(age, 80)  # 80세 이상이면 80으로 고정
+    effective_age = min(age, 80)  # 80세 이상이면 80으로 고정
 
+    for disease in disease_probabilities:
+        if disease == "고혈압":
+            adjustment = min(20, 0.3 * (effective_age - 40))  # 최대 20%까지 증가
+        elif disease == "당뇨병":
+            adjustment = min(30, 0.8 * (effective_age - 40))  # 최대 30%까지 증가
+        elif disease == "고지혈증":
+            adjustment = min(25, 0.6 * (effective_age - 40))  # 최대 25%까지 증가
+        else:
+            adjustment = 0  # 비만은 나이 보정 없음 (BMI에 반영됨)
 
-    
-
-
-        for disease in disease_probabilities:
-            if disease == "고혈압":
-                adjustment = min(20, 0.3 * (effective_age - 40))  # 최대 20%까지 증가
-            elif disease == "당뇨병":
-                adjustment = min(30, 0.8 * (effective_age - 40))  # 최대 30%까지 증가
-            elif disease == "고지혈증":
-                adjustment = min(25, 0.6 * (effective_age - 40))  # 최대 25%까지 증가
-            else:
-                adjustment = 0  # 비만은 나이 보정 없음 (BMI에 반영됨)
-
-            disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
+        disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
 
            
         

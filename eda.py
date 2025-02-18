@@ -6,6 +6,32 @@ import plotly.graph_objects as go
 # 모델 불러오기
 model = joblib.load("classifier2_model.pkl")
 
+
+def calculate_hypertension_risk(systolic_bp, diastolic_bp, smoke, alco, active):
+    """
+    고혈압 위험도를 혈압 수치와 라이프스타일에 기반하여 직접 계산하는 함수.
+    기준: 최고혈압 120, 최저혈압 80일 때 기본 위험은 10%
+    """
+    if systolic_bp >= 140 or diastolic_bp >= 90:
+        base_risk = 80  # 고혈압 기준 초과 시 높은 위험
+    elif systolic_bp >= 130 or diastolic_bp >= 85:
+        base_risk = 60  # 경계성 고혈압
+    elif systolic_bp >= 120 or diastolic_bp >= 80:
+        base_risk = 40  # 약간 높은 위험
+    else:
+        base_risk = 20  # 정상 범위
+    
+    # 라이프스타일 보정: (여기서는 0이면 해당 활동이 있었음을 의미)
+    if smoke == 0:   # 흡연한 경우
+        base_risk += 10
+    if alco == 0:    # 음주한 경우
+        base_risk += 10
+    if active == 0:  # 운동한 경우
+        base_risk -= 10
+
+    return min(max(base_risk, 0), 100)
+
+
 def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **아래 설문지를 작성하면 AI가 건강 위험도를 예측합니다.**")

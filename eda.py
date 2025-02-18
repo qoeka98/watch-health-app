@@ -34,12 +34,20 @@ def run_eda():
                                 smoke, alco, active, systolic_bp, diastolic_bp, 
                                 bp_ratio, BMI, blood_pressure_diff]])
         
-        
+        st.write("📌 입력 데이터 형태:", input_data.shape)
 
         # ✅ 모델 로드
         model = joblib.load("multioutput_classifier.pkl")
 
-        
+        # ✅ 모델 구조 확인
+        st.write("📌 모델 타입:", type(model))
+        st.write("📌 모델 내부 개별 분류기 타입:", [type(est) for est in model.estimators_])
+
+        # ✅ 예측 수행
+        predicted_probs = np.array(model.predict_proba(input_data))
+
+        # 📌 예측 확률 형태 확인
+        st.write("📌 예측 확률 원본 형태:", predicted_probs.shape)
 
         # 🔹 3D 배열일 경우 2D로 변환
         if predicted_probs.ndim == 3:

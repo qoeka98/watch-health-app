@@ -172,29 +172,29 @@ def run_eda():
 
     # [2-2] 모델이 예측한 고혈압 확률을 직접 계산된 값으로 교체
     disease_probabilities["고혈압"] = hypertension_risk
-       
-        if arr.ndim == 3:
-            if hasattr(model, "estimators_"):
-                for i, disease in enumerate(diseases):
-                    pos_index = list(model.estimators_[i].classes_).index(1)
-                    disease_probabilities[disease] = predicted_probs[i][0][pos_index] * 100
-            else:
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][0][1] * 100
-        elif arr.ndim == 2:
-            if hasattr(model, "classes_"):
-                pos_index = list(model.classes_).index(1)
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][pos_index] * 100
-            else:
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][1] * 100
-        elif arr.ndim == 1 and len(arr) == 4:
+    
+    if arr.ndim == 3:
+        if hasattr(model, "estimators_"):
             for i, disease in enumerate(diseases):
-                disease_probabilities[disease] = predicted_probs[i] * 100
+                pos_index = list(model.estimators_[i].classes_).index(1)
+                disease_probabilities[disease] = predicted_probs[i][0][pos_index] * 100
         else:
-            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
-            disease_probabilities = {d: 0 for d in diseases}
+            for i, disease in enumerate(diseases):
+                disease_probabilities[disease] = predicted_probs[i][0][1] * 100
+    elif arr.ndim == 2:
+        if hasattr(model, "classes_"):
+            pos_index = list(model.classes_).index(1)
+            for i, disease in enumerate(diseases):
+                disease_probabilities[disease] = predicted_probs[i][pos_index] * 100
+        else:
+            for i, disease in enumerate(diseases):
+                disease_probabilities[disease] = predicted_probs[i][1] * 100
+    elif arr.ndim == 1 and len(arr) == 4:
+        for i, disease in enumerate(diseases):
+            disease_probabilities[disease] = predicted_probs[i] * 100
+    else:
+        st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
+        disease_probabilities = {d: 0 for d in diseases}
         
         # [3] '비만' 위험도 재계산 (BMI 기반)
         if BMI <= 16:

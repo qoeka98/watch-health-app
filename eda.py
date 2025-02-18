@@ -99,39 +99,35 @@ def run_eda():
         ]])
         
         # [2] 모델 예측 (원시 확률)
-    predicted_probs = model.predict_proba(input_data)
-    arr = np.array(predicted_probs)
-
-    diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-    disease_probabilities = {}
-
-    # 예측 결과의 차원을 확인하여 올바르게 처리
-    if arr.ndim == 2:  # 일반적인 (샘플 수, 클래스 개수) 형태
-        for i, disease in enumerate(diseases):
-            if arr.shape[1] == 2:  # 이진 분류 모델일 경우
-                disease_probabilities[disease] = predicted_probs[i][:, 1] * 100
+        predicted_probs = model.predict_proba(input_data)
+        arr = np.array(predicted_probs)
+        
+        diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
+        disease_probabilities = {}
+        
+        if arr.ndim == 3:
+            if hasattr(model, "estimators_"):
+                for i, disease in enumerate(diseases):
+                    pos_index = list(model.estimators_[i].classes_).index(1)
+                    disease_probabilities[disease] = predicted_probs[i][0][pos_index] * 100
             else:
-                st.error(f"예상치 못한 클래스 개수: {arr.shape[1]}")
-                disease_probabilities[disease] = 0
-
-    elif arr.ndim == 3 and hasattr(model, "estimators_"):  # 개별 모델을 사용한 경우
-        for i, disease in enumerate(diseases):
-            try:
-                pos_index = list(model.estimators_[i].classes_).index(1)
-                disease_probabilities[disease] = predicted_probs[i][:, pos_index] * 100
-            except ValueError:
-                st.error(f"{disease} 예측에서 클래스 1이 없음. 모델 클래스: {model.estimators_[i].classes_}")
-                disease_probabilities[disease] = 0
-
-    elif arr.ndim == 1 and len(arr) == len(diseases):  # 1차원 배열로 예측 결과가 나오는 경우
-        for i, disease in enumerate(diseases):
-            disease_probabilities[disease] = arr[i] * 100
-
-    else:
-        st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
-        disease_probabilities = {d: 0 for d in diseases}
-
-            
+                for i, disease in enumerate(diseases):
+                    disease_probabilities[disease] = predicted_probs[i][0][1] * 100
+        elif arr.ndim == 2:
+            if hasattr(model, "classes_"):
+                pos_index = list(model.classes_).index(1)
+                for i, disease in enumerate(diseases):
+                    disease_probabilities[disease] = predicted_probs[i][pos_index] * 100
+            else:
+                for i, disease in enumerate(diseases):
+                    disease_probabilities[disease] = predicted_probs[i][1] * 100
+        elif arr.ndim == 1 and len(arr) == 4:
+            for i, disease in enumerate(diseases):
+                disease_probabilities[disease] = predicted_probs[i] * 100
+        else:
+            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
+            disease_probabilities = {d: 0 for d in diseases}
+        
         # [3] '비만' 위험도 재계산 (BMI 기반)
         if BMI <= 16:
             obesity_risk = 5
@@ -166,13 +162,19 @@ def run_eda():
             
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
-        # [6] 나이 보정 적용 (기준 나이 50세, 70세 이상은 70세로 고정)
-        effective_age = age if age <= 80 else 80
+        # [6] 나이 보정 적용 (보다 현실적인 방식)
+        effective_age = min(age, 80)  # 80세 이상이면 80으로 고정
+
         for disease in disease_probabilities:
             if disease == "고혈압":
-                adjustment = 0.5 * (effective_age - 20)
+                adjustment = min(20, 0.3 * (effective_age - 40))  # 최대 20%까지 증가
+            elif disease == "당뇨병":
+                adjustment = min(30, 0.8 * (effective_age - 40))  # 최대 30%까지 증가
+            elif disease == "고지혈증":
+                adjustment = min(25, 0.6 * (effective_age - 40))  # 최대 25%까지 증가
             else:
-                adjustment = (effective_age - 20)
+                adjustment = 0  # 비만은 나이 보정 없음 (BMI에 반영됨)
+
             disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
 
            

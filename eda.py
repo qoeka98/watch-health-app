@@ -2,9 +2,17 @@ import streamlit as st
 import numpy as np
 import joblib
 import plotly.graph_objects as go
+import xgboost as xgb
 
 # 모델 불러오기
-model = joblib.load("classifier2_model.pkl")
+model = joblib.load("multioutput_classifier.pkl")
+
+# 내부 XGBoost 모델을 개별적으로 다시 로드
+for i in range(len(model.estimators_)):
+    booster = xgb.Booster()
+    booster.load_model(f"xgb_model_{i}.json")  # JSON 파일에서 로드
+    model.estimators_[i] = xgb.XGBClassifier()
+    model.estimators_[i]._Booster = booster  # Booster를 XGBClassifier에 연결
 
 def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
     """

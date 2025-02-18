@@ -13,6 +13,13 @@ def run_eda():
         age = st.slider("🔹 나이", 10, 100, 40)
         height = st.number_input("🔹 키 (cm)", min_value=120, max_value=250, value=170)
         weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70)
+        bmi_choice = st.radio("🔹 BMI 입력 방식", ["자동 계산 (키 & 몸무게 기반)", "직접 입력"])
+        
+        if bmi_choice == "자동 계산 (키 & 몸무게 기반)":
+            BMI = round(weight / ((height / 100) ** 2), 2)
+        else:
+            BMI = st.number_input("🔹 BMI 직접 입력", min_value=10.0, max_value=50.0, value=24.2, step=0.1)
+        
         systolic_bp = st.number_input("💓 수축기 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         diastolic_bp = st.number_input("🩸 이완기 혈압 (mmHg)", min_value=40, max_value=150, value=80)
         
@@ -26,7 +33,6 @@ def run_eda():
     if submit:
         # ✅ BMI 및 기타 계산
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
-        BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
 
         # ✅ 유저 입력을 기반으로 데이터 생성
@@ -34,22 +40,18 @@ def run_eda():
                                 smoke, alco, active, systolic_bp, diastolic_bp, 
                                 bp_ratio, BMI, blood_pressure_diff]])
         
-        
+        st.write(f"📌 입력된 BMI: {BMI}")
+        st.write(f"📌 모델 입력 데이터: {input_data}")
+
         # ✅ 모델 로드
         model = joblib.load("multioutput_classifier.pkl")
-
-        
 
         # ✅ 예측 수행
         predicted_probs = np.array(model.predict_proba(input_data))
 
-       
-
         # 🔹 3D 배열일 경우 2D로 변환
         if predicted_probs.ndim == 3:
             predicted_probs = predicted_probs.squeeze(axis=1)  # (4,2) 형태로 변경
-
-        
 
         # 📌 예측 확률 결과를 데이터프레임으로 변환
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
@@ -58,6 +60,9 @@ def run_eda():
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
         prob_df = pd.DataFrame(prob_df, index=["예측 확률 (%)"])
         st.dataframe(prob_df)
+
+        # 📌 비만 예측 확률 확인
+        st.write(f"📌 비만 예측 확률: {prob_df.loc['예측 확률 (%)', '비만']}%")
 
         # 📌 결과 해석
         st.markdown("### 📢 건강 진단 결과")

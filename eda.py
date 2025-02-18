@@ -24,7 +24,7 @@ def scale_binary_feature(value):
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
         if smoke == 1:  
-            probabilities[disease] -= 5  # 흡연 시 질병 위험 증가
+            probabilities[disease] += 10  # 흡연 시 질병 위험 증가
         if alco == 1:  
             probabilities[disease] += 5  # 음주 시 질병 위험 증가
         if active == 1:  

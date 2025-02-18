@@ -146,31 +146,6 @@ def run_eda():
             obesity_risk = 100
         disease_probabilities["비만"] = obesity_risk
         
-        # 당뇨, 고지혈증 위험 반전 (모델 예측값이 높을수록 실제 위험은 낮게)
-        for d in ["당뇨병", "고지혈증"]:
-            disease_probabilities[d] = 100 - disease_probabilities[d]
-        
-        # ▶️ 라이프스타일 보정 적용
-        # 고혈압, 당뇨, 고지혈증: 흡연 시 +5, 음주 시 +5, 운동 시 -10
-        # 비만: 운동 시 -10 (흡연/음주는 적용하지 않음)
-        for disease in disease_probabilities:
-            adjusted = disease_probabilities[disease]
-            if disease in ["고혈압", "당뇨병", "고지혈증"]:
-                if smoke:
-                    adjusted += 5
-                if alco:
-                    adjusted += 5
-                if active:
-                    adjusted -= 10
-            else:  # 비만
-                if active:
-                    adjusted -= 10
-            disease_probabilities[disease] = min(max(adjusted, 0), 100)
-        
-        # ▶️ 나이 보정: 기준 나이 50세 기준, 50세 초과면 매년 +1%, 미만이면 -1%
-        age_adjustment = age - 50
-        for disease in disease_probabilities:
-            disease_probabilities[disease] = min(max(disease_probabilities[disease] + age_adjustment, 0), 100)
         
         # 결과 출력
         st.markdown("---")

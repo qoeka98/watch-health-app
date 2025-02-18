@@ -129,7 +129,7 @@ def run_eda():
         # [3] '비만' 위험도 재계산 (BMI 기반)
         if BMI <= 16:
             obesity_risk = 5
-        elif BMI <= 25:
+        elif BMI <= 23:
             obesity_risk = ((BMI - 16) / (25 - 16)) * (50 - 5) + 5
         elif BMI <= 40:
             obesity_risk = ((BMI - 25) / (40 - 25)) * (100 - 50) + 50

@@ -4,6 +4,7 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 from scipy.special import expit  # 시그모이드 함수
+import plotly.graph_objects as go
 
 # ✅ BMI 계산 함수
 def calculate_bmi(weight, height):
@@ -23,7 +24,7 @@ def scale_binary_feature(value):
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
         if smoke == 1:  
-            probabilities[disease] += 5  # 흡연 시 질병 위험 증가
+            probabilities[disease] -= 5  # 흡연 시 질병 위험 증가
         if alco == 1:  
             probabilities[disease] += 5  # 음주 시 질병 위험 증가
         if active == 1:  
@@ -134,15 +135,15 @@ def run_eda():
 
         col1, col2 = st.columns(2)
         with col1:
-            st.metric(label="💓 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
-            st.progress(disease_probabilities["고혈압"] / 100)
-            st.metric(label="⚖️ 비만 위험", value=f"{disease_probabilities['비만']:.2f}%")
-            st.progress(disease_probabilities["비만"] / 100)
+            st.metric(label="💓 고혈압 위험", value=f"{prob_df['고혈압']:.2f}%")
+            st.progress(prob_df["고혈압"] / 100)
+            st.metric(label="⚖️ 비만 위험", value=f"{prob_df['비만']:.2f}%")
+            st.progress(prob_df["비만"] / 100)
         with col2:
-            st.metric(label="🍬 당뇨병 위험", value=f"{disease_probabilities['당뇨병']:.2f}%")
-            st.progress(disease_probabilities["당뇨병"] / 100)
-            st.metric(label="🩸 고지혈증 위험", value=f"{disease_probabilities['고지혈증']:.2f}%")
-            st.progress(disease_probabilities["고지혈증"] / 100)
+            st.metric(label="🍬 당뇨병 위험", value=f"{prob_df['당뇨병']:.2f}%")
+            st.progress(prob_df["당뇨병"] / 100)
+            st.metric(label="🩸 고지혈증 위험", value=f"{prob_df['고지혈증']:.2f}%")
+            st.progress(prob_df["고지혈증"] / 100)
 
         st.write("")
         st.write("")
@@ -150,7 +151,7 @@ def run_eda():
         # 건강 진단 및 추천
         st.write("### ✅ 건강 진단 및 조치 추천 ✅")
         def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
-            prob = disease_probabilities[disease]
+            prob = prob_df[disease]
             if prob > very_high:
                 st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
             elif prob > high:
@@ -194,9 +195,9 @@ def run_eda():
             "사용자 BMI": BMI,
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,
-            "고혈압 위험": disease_probabilities["고혈압"],
-            "당뇨병 위험": disease_probabilities["당뇨병"],
-            "고지혈증 위험": disease_probabilities["고지혈증"],
+            "고혈압 위험": prob_df["고혈압"],
+            "당뇨병 위험": prob_df["당뇨병"],
+            "고지혈증 위험": prob_df["고지혈증"],
         }
 
         categories = list(user_chart.keys())

@@ -107,17 +107,14 @@ def run_eda():
             bp_ratio, BMI, blood_pressure_diff
         ]])
 
-        predicted_probs = np.array(model.predict_proba(input_data))
-        if predicted_probs.ndim == 3:
-            predicted_probs = predicted_probs.squeeze()
-        
+        predicted_probs = np.squeeze(np.array(model.predict_proba(input_data)))
         if predicted_probs.shape[-1] != 2:
             st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={predicted_probs.shape}")
-        else:
-            diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-            disease_probabilities = {diseases[i]: max(0, min(100, predicted_probs[i, 1] * 100)) for i in range(len(diseases))}
-            
-            disease_probabilities["고혈압"] = hypertension_risk
+            return
+        
+        diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
+        disease_probabilities = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}
+        disease_probabilities["고혈압"] = hypertension_risk
         
         # [3] '비만' 위험도 재계산 (BMI 기반)
         if BMI <= 16:

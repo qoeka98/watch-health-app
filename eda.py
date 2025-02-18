@@ -6,27 +6,33 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
-
 # ✅ BMI 계산 함수 (세분화된 기준 적용)
 def calculate_bmi(weight, height):
     if height > 0:
         bmi = round(weight / ((height / 100) ** 2), 2)
         if bmi < 18.5:
             category = "저체중"
+            risk_factor = 10  # 저체중도 건강 위험 있음
         elif 18.5 <= bmi < 23:
             category = "정상 체중"
+            risk_factor = 5
         elif 23 <= bmi < 25:
             category = "과체중 경고"
+            risk_factor = 20
         elif 25 <= bmi < 27:
             category = "과체중"
+            risk_factor = 35
         elif 27 <= bmi < 30:
             category = "경도 비만"
+            risk_factor = 50
         elif 30 <= bmi < 35:
             category = "중등도 비만"
+            risk_factor = 70
         else:
             category = "고도 비만"
-        return bmi, category
-    return 0, "알 수 없음"
+            risk_factor = 90
+        return bmi, category, risk_factor
+    return 0, "알 수 없음", 0
 
 # ✅ 혈압 차 계산 함수
 def calculate_bp_difference(systolic_bp, diastolic_bp):
@@ -36,12 +42,13 @@ def calculate_bp_difference(systolic_bp, diastolic_bp):
 def scale_binary_feature(value, scale_factor=10):
     return value * scale_factor  # 0 → 0, 1 → 10으로 확장
 
-# ✅ 질병 확률 보정 함수 (흡연이 비만 제외, 고지혈증/고혈압/당뇨에만 영향)
-def adjust_probabilities(probabilities, smoke, alco, active):
+# ✅ 질병 확률 보정 함수 (비만 위험도 반영, UI 개선)
+def adjust_probabilities(probabilities, smoke, alco, active, bmi_risk):
     for disease in probabilities:
-        if smoke == 10:  
-            if disease != "비만":  # ✅ 비만 제외하고 흡연 시 확률 증가
-                probabilities[disease] += 10  
+        if disease == "비만":
+            probabilities[disease] = max(probabilities[disease], bmi_risk)  # BMI에 기반한 최소 비만 위험 유지
+        if smoke == 10 and disease != "비만":  
+            probabilities[disease] += 10  # ✅ 흡연이 비만을 제외한 질병 위험 증가
         if alco == 10:
             probabilities[disease] += 5  # ✅ 음주 시 모든 질병 확률 증가
         if active == 10:
@@ -71,7 +78,7 @@ def run_eda():
 
     if submit:
         # ✅ BMI 및 혈압차 자동 계산
-        BMI, bmi_category = calculate_bmi(weight, height)
+        BMI, bmi_category, bmi_risk = calculate_bmi(weight, height)
         blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
 
@@ -88,14 +95,14 @@ def run_eda():
 
         # 🔹 3D 배열일 경우 2D로 변환
         if predicted_probs.ndim == 3:
-            predicted_probs = predicted_probs.squeeze(axis=1)  # (4,2) 형태로 변경
+            predicted_probs = predicted_probs.squeeze(axis=1)
 
         # 📌 예측 확률 결과를 데이터프레임으로 변환
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-        prob_df = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}  # 양성 확률 (1) 만 출력
+        prob_df = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}
 
-        # ✅ 흡연/음주/운동에 대한 확률 보정 적용 (흡연이 비만에는 영향 없음)
-        prob_df = adjust_probabilities(prob_df, smoke, alco, active)
+        # ✅ BMI 위험도를 비만 예측에 반영
+        prob_df = adjust_probabilities(prob_df, smoke, alco, active, bmi_risk)
 
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
         prob_df = pd.DataFrame(prob_df, index=["예측 확률 (%)"])
@@ -103,22 +110,35 @@ def run_eda():
         # ✅ BMI 정보 표시
         st.markdown(f"📌 **현재 BMI: {BMI} ({bmi_category})**")
 
-        # ✅ 질병 발생 확률 크게 표시
+        # ✅ 질병 발생 확률 보기 좋게 표시 (컬럼 UI 적용)
         st.markdown("### 🚑 **질병 발생 확률 (%)**")
-        for disease, value in prob_df.iloc[0].items():
-            st.markdown(f"### {disease}: **{value:.2f}%**")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**🫀 고혈압**: `{prob_df['고혈압'].values[0]:.2f}%`")
+            st.markdown(f"**🩸 고지혈증**: `{prob_df['고지혈증'].values[0]:.2f}%`")
+        with col2:
+            st.markdown(f"**⚖️ 비만**: `{prob_df['비만'].values[0]:.2f}%`")
+            st.markdown(f"**🍭 당뇨병**: `{prob_df['당뇨병'].values[0]:.2f}%`")
 
-        # 📌 결과 해석
-        st.markdown("### 📢 건강 진단 결과")
-        for disease, value in prob_df.iloc[0].items():
-            if value > 85:
-                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다.**")
-            elif value > 75:
-                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
-            elif value > 60:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 건강 관리를 신경 써 주세요.**")
+        # 📌 결과 해석 (세분화된 건강 진단 추가)
+        st.markdown("### 📢 **건강 진단 및 조치 추천**")
+        def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
+            prob = prob_df[disease].values[0]
+            if prob > very_high:
+                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
+            elif prob > high:
+                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 건강 체크를 주기적으로 하세요.**")
+            elif prob > moderate:
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 식습관 개선과 운동을 고려하세요.**")
+            elif prob > low:
+                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 생활을 유지하세요.**")
             else:
-                st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")
+                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 건강을 꾸준히 유지하세요.**")
+
+        show_health_risk("고혈압")
+        show_health_risk("비만")
+        show_health_risk("당뇨병")
+        show_health_risk("고지혈증")
 
 
 

@@ -3,7 +3,7 @@ import numpy as np
 import joblib
 import plotly.graph_objects as go
 import xgboost as xgb
-# ✅ 모델 불러오기
+
 # 🔹 MultiOutputClassifier 로드 (joblib 사용)
 model = joblib.load("multioutput_classifier.pkl")
 
@@ -17,41 +17,24 @@ for i in range(len(model.estimators_)):
     # 🔹 `n_classes_` 수동 설정 (XGBoost의 다중 클래스 분류 문제 해결)
     model.estimators_[i].n_classes_ = 2  # 이진 분류이므로 2로 설정
 
+# 🔹 고혈압 위험도 계산 함수 (혈압 기반 휴리스틱 적용)
+def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
+    base_risk = 10  # 기본값
+    base_risk += max(0, (systolic_bp - 120) * 1.5)  # 수축기 혈압
+    base_risk += max(0, (diastolic_bp - 80) * 1.2)  # 이완기 혈압
+    base_risk += max(0, (blood_pressure_diff - 50) * 0.5)  # 혈압 차이
+    if smoke == 0: base_risk += 10
+    if alco == 0: base_risk += 10
+    if active == 0: base_risk -= 10
+    return min(max(base_risk, 0), 100)  # 0~100 범위 제한
+
+# 🔹 Streamlit 앱 실행
 def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **아래 설문지를 작성하면 AI가 건강 위험도를 예측합니다.**")
-    
-    # ✅ 평균값 설정 (남/여 평균)
-    avg_values_male = {
-        "나이": 45,
-        "키 (cm)": 172,
-        "몸무게 (kg)": 74,
-        "수축기 혈압": 120,
-        "이완기 혈압": 78,
-        "고혈압 위험": 30,
-        "당뇨병 위험": 15,
-        "고지혈증 위험": 25,
-        "대한민국 평균 BMI": 24.8
-    }
-    avg_values_female = {
-        "나이": 45,
-        "키 (cm)": 160,
-        "몸무게 (kg)": 62,
-        "수축기 혈압": 115,
-        "이완기 혈압": 75,
-        "고혈압 위험": 28,
-        "당뇨병 위험": 12,
-        "고지혈증 위험": 20,
-        "대한민국 평균 BMI": 24.2
-    }
-    
-    # ✅ 설문 입력 폼
+
     with st.form("health_form"):
-        st.markdown("### 📝 **개인정보 설문**")
-        st.info("아래 정보를 입력해주세요. (실제 값이 아닐 경우 예측 정확도가 떨어질 수 있습니다.)")
-        st.write("")
-        st.write("")
-        
+        st.markdown("### 📝 개인정보 입력")
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"])
@@ -59,130 +42,72 @@ def run_eda():
         with col2:
             height = st.number_input("🔹 키 (cm)", min_value=120, max_value=250, value=170)
             weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70)
-        
-        st.markdown("---")
-        st.markdown("### 💖 **건강 정보 입력**")
-        st.write("")
-        st.write("")
+
+        st.markdown("### 💖 건강 정보 입력")
         col3, col4 = st.columns(2)
         with col3:
             systolic_bp = st.number_input("💓 수축기(최고) 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         with col4:
             diastolic_bp = st.number_input("🩸 이완기(최저) 혈압 (mmHg)", min_value=40, max_value=150, value=80)
-        
-        st.write("")
-        st.write("")
-        st.markdown("---")
-        st.markdown("### 🏃 **생활 습관 입력**")
-        st.write("해당 부분에 체크해주세요 (복수 선택 가능)")
-        st.write("")
+
+        st.markdown("### 🏃 생활 습관 입력")
         col5, col6, col7 = st.columns(3)
         with col5:
             smoke = st.checkbox("🚬 흡연 여부")
-            smoke = 1 if smoke else 0
+            smoke = 0 if smoke else 1
         with col6:
             alco = st.checkbox("🍺 음주 여부")
-            alco = 1 if alco else 0
+            alco = 0 if alco else 1
         with col7:
             active = st.checkbox("🏃 운동 여부")
-            active = 1 if active else 0
-        
-        st.write("-----")
+            active = 0 if active else 1
+
         submit = st.form_submit_button("🔮 예측하기")
-        st.write("")
-        st.write("")
-    
-    # ✅ 예측 실행
+
     if submit:
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
-        
-        input_data = np.array([[ 
-            1 if gender == "남성" else 0, 
-            age, height, weight,
-            smoke, alco, active, 
-            systolic_bp, diastolic_bp,
-            bp_ratio, BMI, blood_pressure_diff
-        ]])
-        
-        predicted_probs = model.predict_proba(input_data)
-        arr = np.array(predicted_probs)
-        
-        diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
-        disease_probabilities = {}
-        
-        if arr.ndim == 3:
-            if hasattr(model, "estimators_"):
-                for i, disease in enumerate(diseases):
-                    pos_index = list(model.estimators_[i].classes_).index(1)
-                    disease_probabilities[disease] = predicted_probs[i][0][pos_index] * 100
-            else:
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][0][1] * 100
-        elif arr.ndim == 2:
-            if hasattr(model, "classes_"):
-                pos_index = list(model.classes_).index(1)
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][pos_index] * 100
-            else:
-                for i, disease in enumerate(diseases):
-                    disease_probabilities[disease] = predicted_probs[i][1] * 100
-        elif arr.ndim == 1 and len(arr) == 4:
-            for i, disease in enumerate(diseases):
-                disease_probabilities[disease] = predicted_probs[i] * 100
-        else:
-            st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
-            disease_probabilities = {d: 0 for d in diseases}
-        
-        # '비만' 위험도: BMI 기반 재계산
-        if BMI <= 16:
-            obesity_risk = 5
-        elif BMI <= 25:
-            obesity_risk = ((BMI - 16) / (25 - 16)) * (50 - 5) + 5
-        elif BMI <= 40:
-            obesity_risk = ((BMI - 25) / (40 - 25)) * (100 - 50) + 50
-        else:
-            obesity_risk = 100
-        disease_probabilities["비만"] = obesity_risk
-        
-        
-        # 결과 출력
-        st.markdown("---")
-        st.markdown("### 📢 **건강 예측 결과**")
-        st.write("")
-        st.write("")
+        hypertension_risk = calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active)
+
+        input_data = np.array([[1 if gender == "남성" else 0, age, height, weight, smoke, alco, active,
+                                systolic_bp, diastolic_bp, bp_ratio, BMI, blood_pressure_diff]])
+
+        predicted_probs = np.array(model.predict_proba(input_data))
+        diseases = ["비만", "당뇨병", "고지혈증"]  # 고혈압은 따로 계산
+        disease_probabilities = {diseases[i]: predicted_probs[i][0][1] * 100 for i in range(len(diseases))}
+        disease_probabilities["고혈압"] = hypertension_risk
+
+        # 📌 확률 값 검증 및 NaN 값 처리
+        for disease in disease_probabilities:
+            if np.isnan(disease_probabilities[disease]):  # NaN 체크
+                disease_probabilities[disease] = 0
+            disease_probabilities[disease] = min(max(disease_probabilities[disease], 0), 100)  # 0~100 보정
+
+        # 📌 결과 시각화
+        st.markdown("### 📢 건강 예측 결과")
         col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="💓 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
-            st.progress(float(disease_probabilities["고혈압"]) / 100)
-            st.metric(label="⚖️ 비만 위험", value=f"{disease_probabilities['비만']:.2f}%")
-            st.progress(float(disease_probabilities["비만"]) / 100)
-        with col2:
-            st.metric(label="🍬 당뇨병 위험", value=f"{disease_probabilities['당뇨병']:.2f}%")
-            st.progress(float(disease_probabilities["당뇨병"]) / 100)
-            st.metric(label="🩸 고지혈증 위험", value=f"{disease_probabilities['고지혈증']:.2f}%")
-            st.progress(float(disease_probabilities["고지혈증"]) / 100)
-        
-        st.write("")
-        st.write("")
-        st.write("### ✅ 건강 진단 및 조치 추천 ✅")
+        for i, (disease, value) in enumerate(disease_probabilities.items()):
+            with col1 if i % 2 == 0 else col2:
+                st.metric(label=f"💡 {disease} 위험", value=f"{value:.2f}%")
+                st.progress(min(max(value / 100.0, 0.0), 1.0))  # 🔹 확률값을 0~1 범위로 보정
+
+        # 📌 건강 진단 메시지
         def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
             prob = disease_probabilities[disease]
             if prob > very_high:
-                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
+                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다.**")
             elif prob > high:
-                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 주기적인 건강 체크를 권장합니다.**")
+                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
             elif prob > moderate:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 생활습관 개선을 고려하세요. 운동과 식이조절이 필요할 수 있습니다.**")
-            elif prob > low:
-                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 운동과 식이조절을 고려하세요.**")
             else:
-                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
-        show_health_risk("고혈압", 90, 70, 50, 35)
-        show_health_risk("비만", 80, 50, 40, 20)
-        show_health_risk("당뇨병", 70, 60, 50, 20)
-        show_health_risk("고지혈증", 70, 60, 40, 25)
+                st.success(f"✅ **{disease} 위험이 낮습니다. 건강한 습관을 유지하세요.**")
+
+        for disease in disease_probabilities:
+            show_health_risk(disease)
+
+
         
         # ▶️ 평균 비교 차트 (나이, 키 제외; 몸무게 옆에 사용자 BMI 표시)
         st.markdown("---")

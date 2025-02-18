@@ -99,7 +99,7 @@ def run_eda():
             st.metric(label="⚖️ BMI", value=f"{BMI:.2f}")
             st.progress(min(BMI / 40, 1))
         
-        st.markdown("### ✅ 건강 진단 및 조치 추천 ✅")
+        st.markdown("### ✅ 건강 진단 및 조치 추천 ")
         if hypertension_risk >= 90:
             st.error("🚨 **고혈압 위험이 매우 높습니다! 즉각적인 병원 방문을 추천합니다.**")
         elif hypertension_risk >= 70:

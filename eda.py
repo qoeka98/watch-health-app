@@ -204,7 +204,7 @@ def run_eda():
         show_health_risk("고혈압", 90, 70, 50, 35)
         show_health_risk("비만", 80, 70, 40, 20)
         show_health_risk("당뇨병", 70, 60, 50, 20)
-        show_health_risk("고지혈증", 70, 60, 40, 25)
+        show_health_risk("고지혈증", 70, 60, 40,25)
         
         # [8] 평균 비교 차트 (나이, 키 제외; 몸무게 옆에 사용자 BMI 표시)
         st.markdown("---")

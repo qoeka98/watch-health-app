@@ -16,10 +16,65 @@ def run_ml():
      ## 🏗 **입력 데이터(X) 가공하여 성능 최적화**  
     🤔 **기존 데이터만으로 충분할까? NO!**  
 
+        기존 컬럼
+                 
+        age	나이
+        gender	성별
+        height	키 (cm)
+        weight	몸무게 (kg)
+        ap_hi	수축기 혈압 (최고 혈압, mmHg)
+        ap_lo	이완기 혈압 (최저 혈압, mmHg)
+        cholesterol	총 콜레스테롤 수치
+        gluc	혈당 수치
+        smoke	흡연 여부 (0: 비흡연, 1: 흡연)
+        alco	음주 여부 (0: 비음주, 1: 음주)
+        active	신체 활동 여부 (0: 비활동적, 1: 활동적)
+
     💡 **추가 변수 도입!**  
-    ✅ **BMI (체질량지수)**  
-    ✅ **혈압 비율(bp_ratio)**  
-    ✅ **혈압 차이(blood_pressure_diff)**  
+    📌 질병과 직접적인 관계가 있는 변수들 추가
+        BMI= BMI 계산
+        hypertension고혈압
+        obesity비만 여부
+        diabetes당뇨병 여부
+        hyperlipidemia 고지혈증 여부
+
+
+    📌 체질량 및 혈압 관련 심층 변수 도입
+        bp_ratio 혈압 비율
+        bmi_category비만 여부
+        cholesterol_high 고콜레스테롤 여부
+        blood_pressure_diff 혈압 차이
+        bmi_ap_hi_ratioBMI와 수축기 혈압 비율
+        bmi_ap_lo_ratioBMI와 이완기 혈압 비율
+
+    📌 비만과 질병의 관계를 고려한 변수 추가
+
+        obesity_hyperlipidemia 비만 & 고지혈증 동시 보유
+        obesity_diabetes비만 & 당뇨병 동시 보유
+
+    🚬 흡연 & 🍺 음주가 질병 위험을 어떻게 증가시키는지 반영
+
+        smoke_hypertension흡연 & 고혈압
+        smoke_hyperlipidemia 흡연 & 고지혈증
+        smoke_diabetes 흡연 & 당뇨병
+
+        alco_hypertension음주 & 고혈압
+        alco_hyperlipidemia 음주 & 고지혈증
+        alco_diabetes음주 & 당뇨병
+
+    🚬🍺 흡연 & 음주가 동시에 영향을 미치는 경우도 반영
+        smoke_alco_hypertension
+
+    📌 운동 여부 및 연령을 고려한 변수 추가
+        age 나이를 연도로 변환(일수로되어있었습니다)
+        age_group 연령대 구분
+
+    📌 혈압과 질병의 관계를 반영한 변수 추가
+
+        bp_high_risk매우 높은 혈압 위험군
+        bp_diabetes_risk고혈압 + 혈당 이상 조합
+
+ 
 
     📊 **이러한 변수를 추가한 결과,**  
     ✔️ **정확도 87.1%까지 향상**!  

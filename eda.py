@@ -147,20 +147,17 @@ def run_eda():
             adjusted = disease_probabilities[disease]
             if disease == "고혈압":
                 if smoke == 0:   # 흡연했다면
-                    adjusted += 10
+                    adjusted += 20
                 if alco == 0:    # 음주했다면
-                    adjusted += 10
+                    adjusted += 20
                 if active == 0:  # 운동했다면
                     adjusted -= 10
             elif disease in ["당뇨병", "고지혈증"]:
                 if smoke == 0:
-                    adjusted += 10
+                    adjusted += 20
                 if active == 0:
                     adjusted -= 10
-            elif disease == "비만":
-                if active == 0:
-                    adjusted -= 10
-            disease_probabilities[disease] = min(max(adjusted, 0), 100)
+            
         
         # [6] 나이 보정 적용 (기준 나이 50세, 70세 이상은 70세로 고정)
         effective_age = age if age <= 80 else 80

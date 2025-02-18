@@ -68,10 +68,10 @@ def run_eda():
         col5, col6, col7 = st.columns(3)
         with col5:
             smoke = st.checkbox("🚬 흡연 여부")
-            smoke = 1 if smoke else 0
+            smoke = 0 if smoke else 1
         with col6:
             alco = st.checkbox("🍺 음주 여부")
-            alco = 1 if alco else 0
+            alco = 0 if alco else 1
         with col7:
             active = st.checkbox("🏃 운동 여부")
             active = 1 if active else 0

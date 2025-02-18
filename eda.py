@@ -97,9 +97,9 @@ def run_eda():
 
         # 📌 확률 값 검증 및 NaN 값 처리
         for disease in disease_probabilities:
-            if np.isnan(disease_probabilities[disease]):  # NaN 체크
+            if np.isnan(disease_probabilities[disease]):  
                 disease_probabilities[disease] = 0
-            disease_probabilities[disease] = min(max(disease_probabilities[disease], 0), 100)  # 0~100 보정
+            disease_probabilities[disease] = min(max(disease_probabilities[disease], 0), 100) 
 
         # 📌 결과 시각화
         st.markdown("### 📢 건강 예측 결과")

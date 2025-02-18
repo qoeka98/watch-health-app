@@ -151,7 +151,7 @@ def run_eda():
             blood_pressure_diff
         ]])
         
-        st.write("📌 **모델 입력 데이터:**", input_data)
+        
         
         # 모델 로드
         try:
@@ -183,9 +183,8 @@ def run_eda():
         col3.metric("🍬 당뇨병", f"{prob_dict['당뇨병']:.2f}%")
         col4.metric("🧈 고지혈증", f"{prob_dict['고지혈증']:.2f}%")
         
-        # pandas DataFrame으로 변환하여 상세 확률 테이블 표시
-        prob_df = pd.DataFrame(prob_dict, index=["예측 확률 (%)"])
-        st.dataframe(prob_df)
+        
+        
         
         st.markdown("### 📢 **질병별 건강 진단 및 조치 추천**")
         # 질병별 맞춤 피드백 출력

@@ -42,7 +42,7 @@ def calculate_bp_difference(systolic_bp, diastolic_bp):
 
 # ✅ 질병 확률 보정 함수 (BMI 최소 비만 확률 강제 반영)
 def adjust_probabilities(probabilities, bmi_risk):
-    probabilities["비만"] = max(probabilities["비만"], bmi_risk)  # ✅ BMI 최소 비만 위험 반영
+    probabilities["비만"] = max(probabilities["비만"], bmi_risk)  
     probabilities["비만"] = min(probabilities["비만"], 100)  # ✅ 100%를 넘지 않도록 제한
     return probabilities
 

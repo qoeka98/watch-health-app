@@ -14,6 +14,8 @@ for i in range(len(model.estimators_)):
     model.estimators_[i] = xgb.XGBClassifier()
     model.estimators_[i]._Booster = booster  # Booster 연결
 
+    model.estimators_[i].n_classes_ = 2 
+
 # 🔹 고혈압 위험도 계산 함수 (휴리스틱 적용)
 def calculate_hypertension_risk(systolic_bp, diastolic_bp, blood_pressure_diff, smoke, alco, active):
     base_risk = 10  # 기본값

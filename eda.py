@@ -108,41 +108,29 @@ def run_eda():
         for disease, value in prob_df.iloc[0].items():
             st.markdown(f"### {disease}: **{value:.2f}%**")
 
-        # 📌 결과 해석
-        st.markdown("### 📢 건강 진단 결과")
-        for disease, value in prob_df.iloc[0].items():
-            if value > 85:
-                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다.**")
-            elif value > 75:
-                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
-            elif value > 60:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 건강 관리를 신경 써 주세요.**")
-            else:
-                st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")
+        # 📌 결과 해석 및 건강 조치 추천
+        st.markdown("### ✅ 건강 진단 및 조치 추천 ✅")
 
-
-
-
-        # 📌 결과 해석
-        # 건강 진단 및 추천
-        st.write("### ✅ 건강 진단 및 조치 추천 ✅")
-        def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
+        def show_health_risk(disease, very_high, high, moderate, low):
+            """질병별 위험도를 기반으로 건강 조치 추천"""
             prob = prob_df[disease]
             if prob > very_high:
                 st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
             elif prob > high:
                 st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 주기적인 건강 체크를 권장합니다.**")
             elif prob > moderate:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 생활습관 개선을 고려하세요. 운동과 식이조절이 필요할 수 있습니다.**")
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 운동과 식이조절을 고려하세요.**")
             elif prob > low:
                 st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
             else:
-                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
+                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 꾸준한 관리로 건강을 유지하세요.**")
 
-        show_health_risk("고혈압", 90, 70, 50, 35)
-        show_health_risk("비만", 80, 50, 40, 20)
-        show_health_risk("당뇨병", 70, 60, 50, 20)
-        show_health_risk("고지혈증", 70, 60, 40, 25)
+        # ✅ 질병별 위험 기준 적용
+        show_health_risk("고혈압", very_high=90, high=70, moderate=50, low=35)
+        show_health_risk("비만", very_high=80, high=50, moderate=40, low=20)
+        show_health_risk("당뇨병", very_high=70, high=60, moderate=50, low=20)
+        show_health_risk("고지혈증", very_high=70, high=60, moderate=40, low=25)
+
 
 
         # ------------------------------------------
@@ -173,35 +161,14 @@ def run_eda():
         "대한민국 평균 BMI": 24.2
     }
 
-        st.markdown("---")
-        st.markdown("### 📢 **건강 예측 결과**")
-        st.write("")
-        st.write("")
-
         
 
-        # ▶️ 평균 비교 차트 (Plotly)
-        # 차트에서 '나이'와 '키'는 제거하고, '사용자 BMI'를 '몸무게 (kg)' 옆에 표시
+         # ✅ 평균 비교 차트
         st.markdown("---")
         st.markdown("### 📊 **평균 vs. 입력값 비교**")
-        st.info(
-            f"입력한 건강 정보와 일반적인 {gender} 건강 지표를 비교합니다.\n\n"
-            "- **파란색:** 대한민국 평균 수치\n"
-            "- **빨간색:** 입력한 사용자 데이터\n\n"
-            "이를 통해 자신의 건강 상태가 일반적인 평균과 비교해 어느 정도 차이가 있는지 시각적으로 확인할 수 있습니다."
-        )
 
-        # 차트용 데이터 구성 (나이와 키 제거, BMI는 몸무게 옆에 표시)
-        avg_chart = {
-            "몸무게 (kg)": avg_values_male["몸무게 (kg)"] if gender=="남성" else avg_values_female["몸무게 (kg)"],
-            "대한민국 평균 BMI": avg_values_male["대한민국 평균 BMI"] if gender=="남성" else avg_values_female["대한민국 평균 BMI"],
-            "수축기 혈압": avg_values_male["수축기 혈압"] if gender=="남성" else avg_values_female["수축기 혈압"],
-            "이완기 혈압": avg_values_male["이완기 혈압"] if gender=="남성" else avg_values_female["이완기 혈압"],
-            "고혈압 위험": avg_values_male["고혈압 위험"] if gender=="남성" else avg_values_female["고혈압 위험"],
-            "당뇨병 위험": avg_values_male["당뇨병 위험"] if gender=="남성" else avg_values_female["당뇨병 위험"],
-            "고지혈증 위험": avg_values_male["고지혈증 위험"] if gender=="남성" else avg_values_female["고지혈증 위험"],
-        }
-
+        # 차트 데이터 구성
+        avg_chart = avg_values_male if gender == "남성" else avg_values_female
         user_chart = {
             "몸무게 (kg)": weight,
             "사용자 BMI": BMI,
@@ -212,26 +179,9 @@ def run_eda():
             "고지혈증 위험": prob_df["고지혈증"],
         }
 
-        categories = list(user_chart.keys())
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=categories, y=list(avg_chart.values()),
-            name="대한민국 평균", marker_color="blue", opacity=0.7
-        ))
-        fig.add_trace(go.Bar(
-            x=categories, y=list(user_chart.values()),
-            name="유저 입력값", marker_color="red", opacity=0.7
-        ))
-        fig.update_layout(
-            title="📊 평균값과 입력값 비교",
-            xaxis_title="건강 지표",
-            yaxis_title="수치",
-            barmode="group",
-            template="plotly_white",
-            margin=dict(l=40, r=40, t=60, b=40),
-            height=600
-        )
-        st.plotly_chart(fig)
+        for category, value in user_chart.items():
+            avg_value = avg_chart[category] if category in avg_chart else "N/A"
+            st.markdown(f"**{category}**: 사용자 {value} / 대한민국 평균 {avg_value}")
 
         st.markdown("### 📌 **건강 지표 설명**")
         st.info(
@@ -240,7 +190,6 @@ def run_eda():
             "- **고혈압 위험**: 혈압이 정상 범위를 초과할 경우 고혈압 위험 증가\n"
             "- **당뇨병 위험**: 혈당 수치가 높거나 생활습관 요인에 따라 당뇨병 가능성이 높아짐\n"
             "- **고지혈증 위험**: 혈중 콜레스테롤 수치가 높을 경우 혈관 질환 발생 가능성이 증가\n"
-            "- **대한민국 평균값**: 한국 성인 평균 건강 지표 (참고용)\n"
-        ) 
+        )
 if __name__ == "__main__":
     run_eda()

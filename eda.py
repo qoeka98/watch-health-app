@@ -158,6 +158,7 @@ def run_eda():
                 if active == 0:
                     adjusted -= 10
             
+            disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
         # [6] 나이 보정 적용 (기준 나이 50세, 70세 이상은 70세로 고정)
         effective_age = age if age <= 80 else 80

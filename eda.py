@@ -10,7 +10,7 @@ def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **아래 설문지를 작성하면 AI가 건강 위험도를 예측합니다.**")
     
-    # ✅ 평균값 설정 (남/여 평균)
+    # 평균값 설정 (남/여 평균)
     avg_values_male = {
         "나이": 45,
         "키 (cm)": 172,
@@ -22,7 +22,6 @@ def run_eda():
         "고지혈증 위험": 25,
         "대한민국 평균 BMI": 24.8
     }
-
     avg_values_female = {
         "나이": 45,
         "키 (cm)": 160,
@@ -34,14 +33,13 @@ def run_eda():
         "고지혈증 위험": 20,
         "대한민국 평균 BMI": 24.2
     }
-
-    # ✅ 설문 입력 폼
+    
+    # 설문 입력 폼
     with st.form("health_form"):
         st.markdown("### 📝 **개인정보 설문**")
         st.info("아래 정보를 입력해주세요. (실제 값이 아닐 경우 예측 정확도가 떨어질 수 있습니다.)")
         st.write("")
         st.write("")
-        
         col1, col2 = st.columns(2)
         with col1:
             gender = st.radio("🔹 성별", ["여성", "남성"])
@@ -49,25 +47,23 @@ def run_eda():
         with col2:
             height = st.number_input("🔹 키 (cm)", min_value=120, max_value=250, value=170)
             weight = st.number_input("🔹 몸무게 (kg)", min_value=30, max_value=200, value=70)
-
+        
         st.markdown("---")
         st.markdown("### 💖 **건강 정보 입력**")
         st.write("")
         st.write("")
-        
         col3, col4 = st.columns(2)
         with col3:
             systolic_bp = st.number_input("💓 수축기(최고) 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         with col4:
             diastolic_bp = st.number_input("🩸 이완기(최저) 혈압 (mmHg)", min_value=40, max_value=150, value=80)
-
+        
         st.write("")
         st.write("")
         st.markdown("---")
         st.markdown("### 🏃 **생활 습관 입력**")
         st.write("해당 부분에 체크해주세요 (복수 선택 가능)")
         st.write("")
-
         col5, col6, col7 = st.columns(3)
         with col5:
             smoke = st.checkbox("🚬 흡연 여부")
@@ -78,19 +74,18 @@ def run_eda():
         with col7:
             active = st.checkbox("🏃 운동 여부")
             active = 1 if active else 0
-
+        
         st.write("-----")
         submit = st.form_submit_button("🔮 예측하기")
         st.write("")
         st.write("")
-
-    # ✅ 예측 실행
+    
+    # 예측 실행
     if submit:
-        # 자동 계산
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
         BMI = round(weight / ((height / 100) ** 2), 2)
         blood_pressure_diff = systolic_bp - diastolic_bp
-
+        
         # 모델 입력 데이터 구성
         input_data = np.array([[ 
             1 if gender == "남성" else 0, 
@@ -99,14 +94,13 @@ def run_eda():
             systolic_bp, diastolic_bp,
             bp_ratio, BMI, blood_pressure_diff
         ]])
-
-        # 예측 수행
+        
         predicted_probs = model.predict_proba(input_data)
         arr = np.array(predicted_probs)
         
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         disease_probabilities = {}
-
+        
         # 모델의 클래스 순서에 따라 양성(1) 확률 추출
         if arr.ndim == 3:
             if hasattr(model, "estimators_"):
@@ -130,12 +124,8 @@ def run_eda():
         else:
             st.error(f"예상치 못한 predict_proba() 결과 형태입니다: shape={arr.shape}")
             disease_probabilities = {d: 0 for d in diseases}
-
-        # ▶️ '비만' 위험도는 BMI 기반 재계산 (새 매핑)
-        # - BMI <= 16: 5%
-        # - 16 < BMI <= 25: 선형 보간하여 5% ~ 50%
-        # - 25 < BMI <= 40: 선형 보간하여 50% ~ 100%
-        # - BMI > 40: 100%
+        
+        # '비만' 위험도: BMI 기반 재계산
         if BMI <= 16:
             obesity_risk = 5
         elif BMI <= 25:
@@ -145,14 +135,13 @@ def run_eda():
         else:
             obesity_risk = 100
         disease_probabilities["비만"] = obesity_risk
-
-        # ▶️ 고혈압, 당뇨병, 고지혈증의 위험 상태 반전 
-        # (높은 예측값이 낮은 실제 위험으로 반전)
+        
+        # 고혈압, 당뇨, 고지혈증 위험 반전 (높은 예측값 → 낮은 실제 위험)
         for d in ["고혈압", "당뇨병", "고지혈증"]:
             disease_probabilities[d] = 100 - disease_probabilities[d]
-
-        # ▶️ 라이프스타일 보정 적용
-        # 고혈압, 당뇨병, 고지혈증: 흡연 시 +5, 음주 시 +5, 운동 시 -10
+        
+        # 라이프스타일 보정 적용
+        # 고혈압, 당뇨, 고지혈증: 흡연 시 +5, 음주 시 +5, 운동 시 -10
         # 비만: 운동 시 -10 (흡연/음주는 적용하지 않음)
         for disease in disease_probabilities:
             adjusted = disease_probabilities[disease]
@@ -167,37 +156,31 @@ def run_eda():
                 if active:
                     adjusted -= 10
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
-            
-        # ▶️ 나이 보정: 기준 나이(예: 50세)를 기준으로,
-        # 50세 초과 시 매년 +1% 위험, 50세 미만 시 매년 -1% 위험 적용 (모든 질병에)
+        
+        # 나이 보정: 기준 나이 50세를 기준으로, 50세 초과면 매년 +1%, 50세 미만이면 -1%
         age_adjustment = age - 50
         for disease in disease_probabilities:
             disease_probabilities[disease] = min(max(disease_probabilities[disease] + age_adjustment, 0), 100)
-
-        # ------------------------------------------
-        # 결과 출력 (건강 위험도, 시각화 등)
-        # ------------------------------------------
+        
+        # 결과 출력
         st.markdown("---")
         st.markdown("### 📢 **건강 예측 결과**")
         st.write("")
         st.write("")
-
         col1, col2 = st.columns(2)
         with col1:
             st.metric(label="💓 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
-            st.progress(disease_probabilities["고혈압"] / 100)
+            st.progress(float(disease_probabilities["고혈압"]) / 100)
             st.metric(label="⚖️ 비만 위험", value=f"{disease_probabilities['비만']:.2f}%")
-            st.progress(disease_probabilities["비만"] / 100)
+            st.progress(float(disease_probabilities["비만"]) / 100)
         with col2:
             st.metric(label="🍬 당뇨병 위험", value=f"{disease_probabilities['당뇨병']:.2f}%")
-            st.progress(disease_probabilities["당뇨병"] / 100)
+            st.progress(float(disease_probabilities["당뇨병"]) / 100)
             st.metric(label="🩸 고지혈증 위험", value=f"{disease_probabilities['고지혈증']:.2f}%")
-            st.progress(disease_probabilities["고지혈증"] / 100)
-
+            st.progress(float(disease_probabilities["고지혈증"]) / 100)
+        
         st.write("")
         st.write("")
-
-        # 건강 진단 및 추천
         st.write("### ✅ 건강 진단 및 조치 추천 ✅")
         def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
             prob = disease_probabilities[disease]
@@ -211,14 +194,12 @@ def run_eda():
                 st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
             else:
                 st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
-
         show_health_risk("고혈압", 90, 70, 50, 35)
         show_health_risk("비만", 80, 50, 40, 20)
         show_health_risk("당뇨병", 70, 60, 50, 20)
         show_health_risk("고지혈증", 70, 60, 40, 25)
-
-        # ▶️ 평균 비교 차트 (Plotly)
-        # '나이'와 '키'는 제거하고, '몸무게 (kg)' 옆에 '사용자 BMI' 표시
+        
+        # 평균 비교 차트 (나이와 키 제외, 몸무게 옆에 사용자 BMI 표시)
         st.markdown("---")
         st.markdown("### 📊 **평균 vs. 입력값 비교**")
         st.info(
@@ -227,8 +208,6 @@ def run_eda():
             "- **빨간색:** 입력한 사용자 데이터\n\n"
             "이를 통해 자신의 건강 상태가 일반적인 평균과 비교해 어느 정도 차이가 있는지 시각적으로 확인할 수 있습니다."
         )
-
-        # 차트용 데이터 구성 (나이와 키 제외, '몸무게 (kg)' 옆에 '사용자 BMI' 표시)
         avg_chart = {
             "몸무게 (kg)": avg_values_male["몸무게 (kg)"] if gender=="남성" else avg_values_female["몸무게 (kg)"],
             "대한민국 평균 BMI": avg_values_male["대한민국 평균 BMI"] if gender=="남성" else avg_values_female["대한민국 평균 BMI"],
@@ -238,7 +217,6 @@ def run_eda():
             "당뇨병 위험": avg_values_male["당뇨병 위험"] if gender=="남성" else avg_values_female["당뇨병 위험"],
             "고지혈증 위험": avg_values_male["고지혈증 위험"] if gender=="남성" else avg_values_female["고지혈증 위험"],
         }
-
         user_chart = {
             "몸무게 (kg)": weight,
             "사용자 BMI": BMI,
@@ -248,7 +226,6 @@ def run_eda():
             "당뇨병 위험": disease_probabilities["당뇨병"],
             "고지혈증 위험": disease_probabilities["고지혈증"],
         }
-
         categories = list(user_chart.keys())
         fig = go.Figure()
         fig.add_trace(go.Bar(
@@ -269,8 +246,8 @@ def run_eda():
             height=600
         )
         st.plotly_chart(fig)
-
-        st.markdown("### 📌 ** 건강 지표 설명 **")
+        
+        st.markdown("### 📌 **건강 지표 설명**")
         st.info(
             "- **BMI (체질량지수)**: 체중(kg)을 키(m)의 제곱으로 나눈 값으로, 비만 여부를 평가하는 지표입니다. **BMI 25 이상이면 과체중, 30 이상이면 비만**으로 간주됩니다.\n"
             "- **수축기 & 이완기 혈압**: 혈압 측정값 (높을수록 건강 위험 증가)\n"

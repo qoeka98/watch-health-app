@@ -6,6 +6,7 @@ import pandas as pd
 from scipy.special import expit  # 시그모이드 함수
 import plotly.graph_objects as go
 
+
 # ✅ BMI 계산 함수
 def calculate_bmi(weight, height):
     if height > 0:
@@ -17,17 +18,17 @@ def calculate_bp_difference(systolic_bp, diastolic_bp):
     return systolic_bp - diastolic_bp
 
 # ✅ 스케일링 적용 (흡연, 음주 영향력 확대)
-def scale_binary_feature(value):
-    return value * 100  # 0 → 0, 1 → 100으로 확장
+def scale_binary_feature(value, scale_factor=10):
+    return value * scale_factor  # 0 → 0, 1 → 10으로 확장
 
-# ✅ 질병 확률 보정 함수
+# ✅ 질병 확률 보정 함수 (흡연 영향력 강화)
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
-        if smoke == 0:  
-            probabilities[disease] += 10  # 흡연 시 질병 위험 증가
-        if alco == 1:  
+        if smoke == 10:  # ✅ 흡연 영향력 증가
+            probabilities[disease] += 10  # 흡연 시 질병 위험 증가 (기존 5% → 10%)
+        if alco == 10:
             probabilities[disease] += 5  # 음주 시 질병 위험 증가
-        if active == 1:  
+        if active == 10:
             probabilities[disease] -= 5  # 운동 시 질병 위험 감소
         probabilities[disease] = min(max(probabilities[disease], 0), 100)  # 0~100 범위 제한
     return probabilities
@@ -45,9 +46,9 @@ def run_eda():
         systolic_bp = st.number_input("💓 수축기 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         diastolic_bp = st.number_input("🩸 이완기 혈압 (mmHg)", min_value=40, max_value=150, value=80)
 
-        smoke = scale_binary_feature(1 if st.checkbox("🚬 흡연 여부") else 0)
-        alco = scale_binary_feature(1 if st.checkbox("🍺 음주 여부") else 0)
-        active = scale_binary_feature(1 if st.checkbox("🏃 운동 여부") else 0)
+        smoke = scale_binary_feature(1 if st.checkbox("🚬 흡연 여부") else 0, scale_factor=10)
+        alco = scale_binary_feature(1 if st.checkbox("🍺 음주 여부") else 0, scale_factor=10)
+        active = scale_binary_feature(1 if st.checkbox("🏃 운동 여부") else 0, scale_factor=10)
 
         # ✅ 폼 제출 버튼
         submit = st.form_submit_button("🔮 예측하기")
@@ -79,7 +80,7 @@ def run_eda():
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         prob_df = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}  # 양성 확률 (1) 만 출력
 
-        # ✅ 흡연/음주/운동에 대한 확률 보정 적용
+        # ✅ 흡연/음주/운동에 대한 확률 보정 적용 (흡연 영향력 강화)
         prob_df = adjust_probabilities(prob_df, smoke, alco, active)
 
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
@@ -97,6 +98,7 @@ def run_eda():
                 st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 건강 관리를 신경 써 주세요.**")
             else:
                 st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")
+
 
 
 

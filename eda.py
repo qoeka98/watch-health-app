@@ -5,6 +5,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
+
+
 # ✅ BMI 계산 함수 (세분화된 기준 적용)
 def calculate_bmi(weight, height):
     if height > 0:
@@ -101,22 +103,10 @@ def run_eda():
         # ✅ BMI 정보 표시
         st.markdown(f"📌 **현재 BMI: {BMI} ({bmi_category})**")
 
-        # ✅ 결과 시각화 - Plotly 막대 그래프
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=list(prob_df.columns),
-            y=list(prob_df.iloc[0]),
-            marker=dict(color=["red", "orange", "blue", "purple"]),
-            text=[f"{v:.2f}%" for v in prob_df.iloc[0]],
-            textposition='auto'
-        ))
-        fig.update_layout(
-            title="질병 발생 확률",
-            xaxis_title="질병",
-            yaxis_title="예측 확률 (%)",
-            yaxis=dict(range=[0, 100])
-        )
-        st.plotly_chart(fig)
+        # ✅ 질병 발생 확률 크게 표시
+        st.markdown("### 🚑 **질병 발생 확률 (%)**")
+        for disease, value in prob_df.iloc[0].items():
+            st.markdown(f"### {disease}: **{value:.2f}%**")
 
         # 📌 결과 해석
         st.markdown("### 📢 건강 진단 결과")
@@ -129,6 +119,30 @@ def run_eda():
                 st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 건강 관리를 신경 써 주세요.**")
             else:
                 st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")
+
+
+
+
+        # 📌 결과 해석
+        # 건강 진단 및 추천
+        st.write("### ✅ 건강 진단 및 조치 추천 ✅")
+        def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
+            prob = prob_df[disease]
+            if prob > very_high:
+                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
+            elif prob > high:
+                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 주기적인 건강 체크를 권장합니다.**")
+            elif prob > moderate:
+                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 생활습관 개선을 고려하세요. 운동과 식이조절이 필요할 수 있습니다.**")
+            elif prob > low:
+                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
+            else:
+                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
+
+        show_health_risk("고혈압", 90, 70, 50, 35)
+        show_health_risk("비만", 80, 50, 40, 20)
+        show_health_risk("당뇨병", 70, 60, 50, 20)
+        show_health_risk("고지혈증", 70, 60, 40, 25)
 
 
         # ------------------------------------------
@@ -164,40 +178,7 @@ def run_eda():
         st.write("")
         st.write("")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="💓 고혈압 위험", value=f"{prob_df['고혈압']:.2f}%")
-            st.progress(prob_df["고혈압"] / 100)
-            st.metric(label="⚖️ 비만 위험", value=f"{prob_df['비만']:.2f}%")
-            st.progress(prob_df["비만"] / 100)
-        with col2:
-            st.metric(label="🍬 당뇨병 위험", value=f"{prob_df['당뇨병']:.2f}%")
-            st.progress(prob_df["당뇨병"] / 100)
-            st.metric(label="🩸 고지혈증 위험", value=f"{prob_df['고지혈증']:.2f}%")
-            st.progress(prob_df["고지혈증"] / 100)
-
-        st.write("")
-        st.write("")
-
-        # 건강 진단 및 추천
-        st.write("### ✅ 건강 진단 및 조치 추천 ✅")
-        def show_health_risk(disease, very_high=90, high=75, moderate=50, low=35):
-            prob = prob_df[disease]
-            if prob > very_high:
-                st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다. 병원 방문을 추천합니다.**")
-            elif prob > high:
-                st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다. 주기적인 건강 체크를 권장합니다.**")
-            elif prob > moderate:
-                st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 생활습관 개선을 고려하세요. 운동과 식이조절이 필요할 수 있습니다.**")
-            elif prob > low:
-                st.success(f"✅ **{disease} 위험이 낮은 편입니다. 건강한 습관을 유지하세요.**")
-            else:
-                st.success(f"🎉 **{disease} 위험이 매우 낮습니다! 현재 건강 상태가 양호합니다. 건강을 꾸준히 관리하세요.**")
-
-        show_health_risk("고혈압", 90, 70, 50, 35)
-        show_health_risk("비만", 80, 50, 40, 20)
-        show_health_risk("당뇨병", 70, 60, 50, 20)
-        show_health_risk("고지혈증", 70, 60, 40, 25)
+        
 
         # ▶️ 평균 비교 차트 (Plotly)
         # 차트에서 '나이'와 '키'는 제거하고, '사용자 BMI'를 '몸무게 (kg)' 옆에 표시

@@ -21,15 +21,16 @@ def calculate_bp_difference(systolic_bp, diastolic_bp):
 def scale_binary_feature(value, scale_factor=10):
     return value * scale_factor  # 0 → 0, 1 → 10으로 확장
 
-# ✅ 질병 확률 보정 함수 (흡연 영향력 강화)
+# ✅ 질병 확률 보정 함수 (흡연이 비만 제외, 고지혈증/고혈압/당뇨에만 영향)
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
-        if smoke == 10:  # ✅ 흡연 영향력 증가
-            probabilities[disease] += 10  # 흡연 시 질병 위험 증가 (기존 5% → 10%)
+        if smoke == 10:  
+            if disease != "비만":  # ✅ 비만 제외하고 흡연 시 확률 증가
+                probabilities[disease] += 10  
         if alco == 10:
-            probabilities[disease] += 5  # 음주 시 질병 위험 증가
+            probabilities[disease] += 5  # ✅ 음주 시 모든 질병 확률 증가
         if active == 10:
-            probabilities[disease] -= 5  # 운동 시 질병 위험 감소
+            probabilities[disease] -= 5  # ✅ 운동 시 모든 질병 확률 감소
         probabilities[disease] = min(max(probabilities[disease], 0), 100)  # 0~100 범위 제한
     return probabilities
 
@@ -80,7 +81,7 @@ def run_eda():
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         prob_df = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}  # 양성 확률 (1) 만 출력
 
-        # ✅ 흡연/음주/운동에 대한 확률 보정 적용 (흡연 영향력 강화)
+        # ✅ 흡연/음주/운동에 대한 확률 보정 적용 (흡연이 비만에는 영향 없음)
         prob_df = adjust_probabilities(prob_df, smoke, alco, active)
 
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
@@ -90,11 +91,11 @@ def run_eda():
         # 📌 결과 해석
         st.markdown("### 📢 건강 진단 결과")
         for disease, value in prob_df.iloc[0].items():
-            if value > 75:
+            if value > 85:
                 st.error(f"🚨 **{disease} 위험이 매우 높습니다! 즉각적인 관리가 필요합니다.**")
-            elif value > 50:
+            elif value > 75:
                 st.warning(f"⚠️ **{disease} 위험이 높습니다. 생활습관 개선이 필요합니다.**")
-            elif value > 30:
+            elif value > 60:
                 st.info(f"ℹ️ **{disease} 위험이 중간 수준입니다. 건강 관리를 신경 써 주세요.**")
             else:
                 st.success(f"✅ **{disease} 위험이 낮습니다. 건강을 유지하세요!**")

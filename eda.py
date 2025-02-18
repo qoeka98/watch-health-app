@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 
 
-# ✅ BMI 계산 함수 (세분화된 기준 적용 & 최소 비만 확률 설정 추가)
+# ✅ BMI 계산 함수 
 def calculate_bmi(weight, height):
     if height > 0:
         bmi = round(weight / ((height / 100) ** 2), 2)

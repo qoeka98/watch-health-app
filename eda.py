@@ -147,7 +147,7 @@ def run_eda():
             adjusted = disease_probabilities[disease]
             if disease == "고혈압":
                 if smoke == 0:   # 흡연했다면
-                    adjusted += 20
+                    adjusted += 10
                 if alco == 0:    # 음주했다면
                     adjusted += 20
                 if active == 0:  # 운동했다면
@@ -176,7 +176,7 @@ def run_eda():
         st.write("")
         col1, col2 = st.columns(2)
         with col1:
-            st.metric(label=" 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
+            st.metric(label="💓 고혈압 위험", value=f"{disease_probabilities['고혈압']:.2f}%")
             st.progress(float(disease_probabilities["고혈압"]) / 100)
             st.metric(label="⚖️ 비만 위험", value=f"{disease_probabilities['비만']:.2f}%")
             st.progress(float(disease_probabilities["비만"]) / 100)

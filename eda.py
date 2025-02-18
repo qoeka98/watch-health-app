@@ -152,7 +152,8 @@ def run_eda():
             disease_probabilities[d] = 100 - disease_probabilities[d]
 
         # ▶️ 라이프스타일 보정 적용
-        
+        # 고혈압, 당뇨병, 고지혈증: 흡연 시 +5, 음주 시 +5, 운동 시 -10
+        # 비만: 운동 시 -10 (흡연/음주는 적용하지 않음)
         for disease in disease_probabilities:
             adjusted = disease_probabilities[disease]
             if disease in ["고혈압", "당뇨병", "고지혈증"]:
@@ -163,9 +164,8 @@ def run_eda():
                 if active:
                     adjusted -= 10
             else:  # 비만
-                if active & alco & smoke:
-                    adjusted -= 20
-                
+                if active:
+                    adjusted -= 10
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
             
         # ▶️ 나이 보정: 기준 나이(예: 50세)를 기준으로,

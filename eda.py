@@ -146,9 +146,9 @@ def run_eda():
         for disease in disease_probabilities:
             adjusted = disease_probabilities[disease]
             if disease == "고혈압":
-                if smoke:
+                if smoke==0:
                     adjusted -= 30
-                if alco:
+                if alco==0:
                     adjusted -= 30
                 if active:
                     adjusted += 10

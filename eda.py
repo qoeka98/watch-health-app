@@ -23,7 +23,7 @@ def scale_binary_feature(value):
 # ✅ 질병 확률 보정 함수
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
-        if smoke == 1:  
+        if smoke == 0:  
             probabilities[disease] += 10  # 흡연 시 질병 위험 증가
         if alco == 1:  
             probabilities[disease] += 5  # 음주 시 질병 위험 증가

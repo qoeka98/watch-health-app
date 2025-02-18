@@ -2,16 +2,12 @@ import joblib
 import numpy as np
 import streamlit as st
 import pandas as pd
-from scipy.special import expit  # 시그모이드 함수 (필요 시 사용)
 import plotly.graph_objects as go
 
-
-# ✅ BMI 계산 함수
+# ✅ BMI 계산 함수 (실제 BMI 값 반환)
 def calculate_bmi(weight, height):
     if height > 0:
-        # BMI 공식: weight / (height(m))^2  
-        # 여기서는 소수점 2자리 반올림 후 100배 (원하는 방식으로 조정)
-        return round(weight / ((height / 100) ** 2), 2) * 100
+        return round(weight / ((height / 100) ** 2), 2)
     return 0
 
 # ✅ 혈압 차 계산 함수
@@ -24,7 +20,7 @@ def scale_binary_feature(value, scale_factor=10):
 
 # ✅ 질병 확률 보정 함수
 # - 흡연: 체크 시 모든 질병 위험 확률을 +10  
-# - 음주: 체크 시 모든 질병(비만, 당뇨, 고혈압, 고지혈증) 위험 확률을 +5  
+# - 음주: 체크 시 모든 질병 위험 확률을 +5  
 # - 운동: 체크 시 모든 질병 위험 확률을 -2  
 def adjust_probabilities(probabilities, smoke, alco, active):
     for disease in probabilities:
@@ -111,7 +107,6 @@ def show_health_risk(disease, value):
         else:
             st.success(f"🎉 **고지혈증 위험이 매우 낮습니다!**")
 
-
 def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **건강 정보를 입력하면 AI가 질병 발생 확률을 예측합니다.**")
@@ -135,7 +130,8 @@ def run_eda():
         # BMI 및 혈압 차 계산
         BMI = calculate_bmi(weight, height)
         blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
-        bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
+        # bp_ratio는 반올림 없이 실제 비율 사용
+        bp_ratio = systolic_bp / diastolic_bp if diastolic_bp > 0 else 0
 
         # 모델 입력 데이터 생성
         input_data = np.array([[ 
@@ -160,17 +156,15 @@ def run_eda():
             st.error("모델 파일을 불러오지 못했습니다. 모델 파일의 경로를 확인하세요.")
             st.stop()
         
-        # 예측 수행 (예측 결과: 각 질병에 대한 [0, 1] 클래스의 확률)
+        # 예측 수행 (각 질병의 [0, 1] 클래스 확률)
         predicted_probs = np.array(model.predict_proba(input_data))
-        # 만약 3차원 배열이면 squeeze
         if predicted_probs.ndim == 3:
             predicted_probs = predicted_probs.squeeze(axis=1)  # (4,2) 형태
         
-        # 질병 이름 (순서는 모델 학습 순서와 일치해야 함)
+        # 질병 이름 (모델 학습 순서와 일치해야 함)
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         prob_dict = {}
         for i, disease in enumerate(diseases):
-            # 양성 클래스(질병 존재) 확률에 100을 곱해 %로 변환
             prob_dict[disease] = predicted_probs[i, 1] * 100
         
         # 흡연/음주/운동에 따른 보정 적용
@@ -183,7 +177,7 @@ def run_eda():
         col3.metric("🍬 당뇨병", f"{prob_dict['당뇨병']:.2f}%")
         col4.metric("🧈 고지혈증", f"{prob_dict['고지혈증']:.2f}%")
         
-        # 위험율을 보다 눈에 띄게 HTML 스타일로 표시
+        # 위험율 요약 (HTML 스타일)
         st.markdown("<hr>", unsafe_allow_html=True)
         st.markdown("<h2 style='text-align: center;'>💥 위험율 요약</h2>", unsafe_allow_html=True)
         for disease, value in prob_dict.items():
@@ -191,13 +185,10 @@ def run_eda():
         st.markdown("<hr>", unsafe_allow_html=True)
         
         st.markdown("### 📢 **질병별 건강 진단 및 조치 추천**")
-        # 질병별 맞춤 피드백 출력
         for disease, value in prob_dict.items():
             show_health_risk(disease, value)
         
-        # -------------------------
         # 평균 비교 차트 (Plotly)
-        # -------------------------
         st.markdown("---")
         st.markdown("### 📊 **평균 vs. 입력값 비교**")
         st.info(
@@ -231,11 +222,9 @@ def run_eda():
             "대한민국 평균 BMI": 24.2
         }
         
-        # 사용자 데이터 구성  
-        # BMI는 따로 계산한 값을 사용 (비율로 표시하기 위해 100으로 나눔)
         user_chart = {
             "몸무게 (kg)": weight,
-            "사용자 BMI": BMI / 100,
+            "사용자 BMI": BMI,  # 실제 BMI 값 사용
             "수축기 혈압": systolic_bp,
             "이완기 혈압": diastolic_bp,
             "고혈압 위험": prob_dict["고혈압"],
@@ -243,7 +232,6 @@ def run_eda():
             "고지혈증 위험": prob_dict["고지혈증"]
         }
         
-        # 평균 데이터는 성별에 따라 선택
         avg_chart = {
             "몸무게 (kg)": avg_values_male["몸무게 (kg)"] if gender == "남성" else avg_values_female["몸무게 (kg)"],
             "대한민국 평균 BMI": avg_values_male["대한민국 평균 BMI"] if gender == "남성" else avg_values_female["대한민국 평균 BMI"],
@@ -254,7 +242,6 @@ def run_eda():
             "고지혈증 위험": avg_values_male["고지혈증 위험"] if gender == "남성" else avg_values_female["고지혈증 위험"]
         }
         
-        # 범주 목록
         categories = list(user_chart.keys())
         fig = go.Figure()
         fig.add_trace(go.Bar(

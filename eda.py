@@ -156,14 +156,7 @@ def run_eda():
                     adjusted -= 10
             disease_probabilities[disease] = min(max(adjusted, 0), 100)
         
-        # ▶️ 나이 보정: 기준 나이 50세 기준
-        # 고혈압은 나이 효과를 절반으로 적용
-        for disease in disease_probabilities:
-            if disease == "고혈압":
-                adjustment = 0.5 * (age - 100)
-            else:
-                adjustment = age - 50
-            disease_probabilities[disease] = min(max(disease_probabilities[disease] + adjustment, 0), 100)
+       
         
         # 결과 출력
         st.markdown("---")

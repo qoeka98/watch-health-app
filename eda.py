@@ -2,6 +2,7 @@ import joblib
 import numpy as np
 import streamlit as st
 import pandas as pd
+from scipy.special import expit  # 시그모이드 함수
 
 # ✅ BMI 계산 함수
 def calculate_bmi(weight, height):
@@ -13,9 +14,9 @@ def calculate_bmi(weight, height):
 def calculate_bp_difference(systolic_bp, diastolic_bp):
     return systolic_bp - diastolic_bp
 
-# ✅ Min-Max Scaling 함수 (비만 확률 조정용)
-def min_max_scale(value, min_val=18.5, max_val=40):
-    return max(0, min(100, ((value - min_val) / (max_val - min_val)) * 100))
+# ✅ 지수형 보정 (sigmoid scaling 적용)
+def sigmoid_scaling(x):
+    return expit((x - 25) / 5) * 100  # BMI가 25~30일 때 50% 근처, 30 이상일 때 더 큰 영향
 
 def run_eda():
     st.title("🩺 건강 예측 AI")
@@ -31,6 +32,8 @@ def run_eda():
         diastolic_bp = st.number_input("🩸 이완기 혈압 (mmHg)", min_value=40, max_value=150, value=80)
         
         smoke = 1 if st.checkbox("🚬 흡연 여부") else 0
+        remove_smoke = st.checkbox("🚫 흡연 변수 제거하고 예측")  # ✅ 흡연 변수 영향 테스트
+
         alco = 1 if st.checkbox("🍺 음주 여부") else 0
         active = 1 if st.checkbox("🏃 운동 여부") else 0
 
@@ -43,13 +46,18 @@ def run_eda():
         blood_pressure_diff = calculate_bp_difference(systolic_bp, diastolic_bp)
         bp_ratio = round(systolic_bp / diastolic_bp, 2) if diastolic_bp > 0 else 0
 
-        # ✅ BMI 확률 보정 (Min-Max Scaling 적용)
-        scaled_BMI = min_max_scale(BMI)
+        # ✅ BMI 보정 (Sigmoid Scaling 적용)
+        scaled_BMI = sigmoid_scaling(BMI)
 
         # ✅ 계산된 값 확인 (디버깅용)
-        st.write(f"📌 **계산된 BMI:** {BMI} (보정값: {scaled_BMI}%)")
+        st.write(f"📌 **계산된 BMI:** {BMI} (보정값: {scaled_BMI:.2f}%)")
         st.write(f"📌 **계산된 혈압 차:** {blood_pressure_diff}")
         st.write(f"📌 **계산된 혈압 비율:** {bp_ratio}")
+
+        # ✅ 흡연 변수 제거 여부 확인
+        if remove_smoke:
+            smoke = 0
+            st.write("🚫 **흡연 변수 제거 후 예측 수행 중...**")
 
         # ✅ 유저 입력을 기반으로 데이터 생성
         input_data = np.array([[1 if gender == "남성" else 0, age, height, weight, 
@@ -73,7 +81,7 @@ def run_eda():
         prob_df = {diseases[i]: predicted_probs[i][1] * 100 for i in range(len(diseases))}  # 양성 확률 (1) 만 출력
 
         # ✅ 비만 확률 보정 (BMI 기반 조정)
-        prob_df["비만"] = (prob_df["비만"] + scaled_BMI) / 2  # 평균값 적용하여 조정
+        prob_df["비만"] = (prob_df["비만"] + scaled_BMI) / 2  # 보정된 BMI와 평균 적용
 
         # 🔹 pandas DataFrame으로 변환 후 Streamlit에서 표시
         prob_df = pd.DataFrame(prob_df, index=["예측 확률 (%)"])

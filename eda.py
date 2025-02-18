@@ -147,14 +147,14 @@ def run_eda():
             adjusted = disease_probabilities[disease]
             if disease == "고혈압":
                 if smoke == 0:   # 흡연했다면
-                    adjusted += 5
+                    adjusted += 10
                 if alco == 0:    # 음주했다면
-                    adjusted += 5
+                    adjusted += 10
                 if active == 0:  # 운동했다면
                     adjusted -= 10
             elif disease in ["당뇨병", "고지혈증"]:
                 if smoke == 0:
-                    adjusted += 5
+                    adjusted += 10
                 if active == 0:
                     adjusted -= 10
             elif disease == "비만":

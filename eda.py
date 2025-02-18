@@ -7,7 +7,8 @@ from scipy.special import expit  # 시그모이드 함수
 model = joblib.load("multioutput_classifier.pkl")
 
 def sigmoid_scaling(x):
-    return expit((x - 0.5) * 3) * 100  # 백분율 스케일 조정
+    """ 확률값을 0~100 범위의 백분율로 변환하는 시그모이드 함수 """
+    return expit((x - 0.5) * 3) * 100
 
 def run_eda():
     st.title("🩺 건강 예측 AI")

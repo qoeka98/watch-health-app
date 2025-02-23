@@ -5,13 +5,9 @@ from home import run_home
 from ml import run_ml
 from snagdam import run_snagdam
 
-# ✅ 전체 페이지 스타일 설정
-st.set_page_config(
-    page_title="건강 예측 AI",
-    page_icon="🩺",
-    layout="wide",
-    initial_sidebar_state="expanded"  # 기본적으로 사이드바 확장
-)
+# ✅ `st.set_page_config()`를 가장 먼저 실행
+st.set_page_config(page_title="건강 예측 AI", page_icon="🩺", layout="wide")
+
 
 def main():
     # ✅ Streamlit Option Menu 사용

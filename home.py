@@ -40,39 +40,6 @@ def run_home():
     st.write("")
     st.write("")
 
-    # ✅ 기능 소개 (카드 스타일)
-    st.markdown(
-        """
-
-
-        <h3>📌 기능 소개</h3>
-
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <div style="
-                flex: 1;
-                background-color: #e3f2fd;
-                padding: 15px;
-                border-radius: 10px;
-                text-align: center;
-                min-width: 250px;">
-                <h4>🔍 질병 예측</h4>
-                <p>AI 모델이 입력 데이터를 분석하여 건강 위험도를 예측합니다.</p>
-            </div>
-            <div style="
-                flex: 1;
-                background-color: #e3f2fd;
-                padding: 15px;
-                border-radius: 10px;
-                text-align: center;
-                min-width: 250px;">
-                <h4>📊 개발 과정</h4>
-                <p>질병 예측 모델을 어떻게 만들었는지 설명합니다.</p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
    
 
 if __name__ == "__main__":

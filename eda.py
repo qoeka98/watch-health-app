@@ -71,8 +71,8 @@ def run_eda():
         systolic_bp = st.number_input("💓 수축기 혈압 (mmHg)", min_value=50, max_value=200, value=120)
         diastolic_bp = st.number_input("🩸 이완기 혈압 (mmHg)", min_value=40, max_value=150, value=80)
 
-        smoke = 1 if st.checkbox("🚬 흡연 여부") else 0
-        alco = 1 if st.checkbox("🍺 음주 여부") else 0
+        smoke = 1 if st.checkbox("🍺 음주 여부") else 0
+        alco = 1 if st.checkbox("🚬 흡연 여부") else 0
 
         submit = st.form_submit_button("🔮 예측하기")
 

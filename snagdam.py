@@ -48,7 +48,18 @@ def get_huggingface_token():
 
 def run_snagdam():
     st.title("💬 건강 상담 챗봇")
-    st.info('''건강예측을 바탕으로 건강 상담을 진행해보세요! ''')
+    st.info(
+    '''건강 예측을 바탕으로 건강 상담을 진행해보세요! 🩺  
+
+    **예시 질문:**  
+    - 제 건강 상태를 개선하려면 어떤 운동이 좋을까요?  
+    - 식단을 어떻게 조절하면 좋을까요?  
+    - 특정 질병의 위험을 낮추기 위한 생활 습관은?  
+    - 정기 건강 검진은 얼마나 자주 받아야 하나요?  
+    - 혈압을 낮추는 방법에는 무엇이 있나요?  
+    '''
+)
+
     token=get_huggingface_token()
     # ✅ Hugging Face Inference API 클라이언트 설정
     client = InferenceClient(

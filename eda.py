@@ -26,10 +26,9 @@ def adjust_by_age(age, probabilities):
     else:
         age_factors = {"고혈압": 25, "비만": 5, "당뇨병": 30, "고지혈증": 10}
     
-    # 연령 가중치 반영
     for disease in probabilities:
         probabilities[disease] += age_factors[disease]
-        probabilities[disease] = min(probabilities[disease], 100)  # 100점 초과 방지
+        probabilities[disease] = min(probabilities[disease], 100)
     
     return probabilities
 
@@ -46,11 +45,24 @@ def get_health_status(probability):
     else:
         return "🔴 위급", "⛔ 즉시 조치 필요!", "위험이 매우 높습니다! 병원 진료를 권장합니다."
 
+def summarize_health(prob_dict):
+    avg_risk = np.mean(list(prob_dict.values()))
+    
+    if avg_risk <= 20:
+        return "✅ 전반적으로 건강 상태가 양호합니다! 좋은 생활 습관을 계속 유지하세요."
+    elif avg_risk <= 40:
+        return "👍 현재 건강 상태는 안정적입니다. 하지만 꾸준한 건강 관리가 필요합니다."
+    elif avg_risk <= 60:
+        return "⚠️ 건강 상태에 주의가 필요합니다. 생활 습관 개선을 고려해보세요."
+    elif avg_risk <= 80:
+        return "🚨 건강 위험 수준이 높아지고 있습니다. 적극적인 건강 관리가 필요합니다!"
+    else:
+        return "⛔ 건강 위험이 매우 높습니다! 즉시 의료 전문가와 상담하세요."
+
 def run_eda():
     st.title("🩺 건강 예측 AI")
     st.markdown("📌 **건강 정보를 입력하면 AI가 질병 발생 확률을 예측합니다.**")
 
-    # 사용자 입력 폼
     with st.form("user_input_form"):
         gender = st.radio("🔹 성별", ["여성", "남성"])
         age = st.slider("🔹 나이", 10, 100, 40)
@@ -64,47 +76,64 @@ def run_eda():
 
         submit = st.form_submit_button("🔮 예측하기")
 
+
+
+
     if submit:
-        # 🚀 6개 Feature만 사용하여 모델 입력값 생성
         input_data = np.array([[ 
-            systolic_bp,       # 수축기 혈압
-            diastolic_bp,      # 이완기 혈압
-            weight,            # 체중
-            height,            # 신장
-            smoke,             # 흡연 여부
-            alco               # 음주 여부
+            systolic_bp, diastolic_bp, weight, height, smoke, alco
         ]])
 
-        # AI 예측 수행
         predicted_probs = model.predict(input_data)
-        predicted_probs = np.clip(np.round(predicted_probs, 2), 0, 100)  # 100점 초과 방지
+        predicted_probs = np.clip(np.round(predicted_probs, 2), 0, 100)
 
-        # 질병 이름
         diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
         prob_dict = {diseases[i]: predicted_probs[0, i] for i in range(len(diseases))}
-
-        # ✅ 나이 가중치 적용
         prob_dict = adjust_by_age(age, prob_dict)
 
-        # ✅ 컬럼 레이아웃 (2x2)
+        
+        st.markdown("## 🏥 건강 종합 진단")
+        st.info(summarize_health(prob_dict))
+
         col1, col2 = st.columns(2)
 
         for i, disease in enumerate(diseases):
             status, status_text, advice = get_health_status(prob_dict[disease])
 
-            # 컬럼 배치
             with col1 if i % 2 == 0 else col2:
                 st.subheader(f"📌 {disease}")
                 st.metric(label=f"위험 확률", value=f"{prob_dict[disease]:.2f}%", delta=status)
-                st.progress(int(prob_dict[disease]))  # 바 차트로 시각화
+                st.progress(int(prob_dict[disease]))
                 
-                # 건강 조치 문구
                 if "🟢" in status:
                     st.success(f"💡 {advice}")
                 elif "🟡" in status:
                     st.warning(f"💡 {advice}")
                 else:
                     st.error(f"💡 {advice}")
+
+        
+        st.info(
+    """
+    **당뇨병 🩸**  
+    혈당이 정상보다 높아지는 질환으로, 인슐린 기능이 저하되어 발생.  
+    관리하지 않으면 신장, 눈, 신경 등에 합병증 위험 증가.  
+
+    **비만 ⚖️**  
+    체지방이 과도하게 축적된 상태로, 각종 성인병(당뇨, 고혈압, 심장병) 위험을 높임.  
+    원인은 주로 과식, 운동 부족, 대사 문제.  
+
+    **고지혈증 🥓**  
+    혈액 내 콜레스테롤과 중성지방 수치가 높아져 혈관이 막힐 위험 증가.  
+    심근경색, 뇌졸중 원인이 될 수 있음.  
+
+    **고혈압 💓**  
+    혈관 속 혈압이 정상보다 높은 상태로, 심장과 혈관에 부담을 주어  
+    뇌졸중과 심장병 위험을 높임.  
+    나트륨 과다 섭취와 스트레스가 주요 원인.  
+    """
+)
+        
 
 ## ------------------------------------------------------------------------
                 

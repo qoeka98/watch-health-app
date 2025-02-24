@@ -87,7 +87,7 @@ def run_eda():
         predicted_probs = model.predict(input_data)
         predicted_probs = np.clip(np.round(predicted_probs, 2), 0, 100)
 
-        diseases = ["고혈압", "비만", "당뇨병", "고지혈증"]
+        diseases = ["고혈압", "비만", "당뇨병","고지혈증"]
         prob_dict = {diseases[i]: predicted_probs[0, i] for i in range(len(diseases))}
         prob_dict = adjust_by_age(age, prob_dict)
 

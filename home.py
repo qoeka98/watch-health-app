@@ -6,7 +6,7 @@ import os
 def run_home():
     # ✅ 페이지 제목
     st.markdown("<h1 style='text-align: center; color: #007bff;'>🏠 건강 예측 AI 홈</h1>", unsafe_allow_html=True)
-    st.write("💡 **당신의 건강을 AI로 예측해보세요!** 🏥")
+    st.info("💡 **고혈압, 비만, 당뇨병, 고지혈증 4개의 질병을 예측해 우리 함께 건강한 삶을 만들어 갑시다!** 🏥")
 
     # ✅ 이미지 삽입 (경로 확인)
     image_path = "image/진료.png"

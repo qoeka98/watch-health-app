@@ -92,7 +92,6 @@ def run_snagdam():
             system_prompt = (
                 "너는 건강, 의학, 의료, 약학, 한의학, 당뇨병,'당뇨', 비만,다이어트, 고지혈증, 고혈압 스페셜 전문가 AI야. "
                 "사용자의 질문을 분석하고, 정확한 답변만 제공해. "
-               
                 "당신은 건강관련 전문가 AI 입니다. 특히 비만,다이어트트, 고지혈증 , '당뇨병',당뇨, 고혈압에 특화되어있습니다"
             )
 
@@ -101,13 +100,15 @@ def run_snagdam():
             with st.chat_message("user"):
                 st.markdown(clean_chat)
 
-            # ✅ AI 응답 요청 (Gemma 모델 사용)
-            full_prompt = system_prompt + "\n\n" + clean_chat
+            # ✅ AI 응답 요청 전에 스피너 표시
+            with st.spinner('AI가 응답 중입니다...'):
+                # ✅ AI 응답 요청 (Gemma 모델 사용)
+                full_prompt = system_prompt + "\n\n" + clean_chat
 
-            response = client.text_generation(
-                prompt=full_prompt,
-                max_new_tokens=520
-            )
+                response = client.text_generation(
+                    prompt=full_prompt,
+                    max_new_tokens=520
+                )
 
             # ✅ 응답에서 첫 줄 제거
             response = filter_ai_response(response, clean_chat)
@@ -116,3 +117,4 @@ def run_snagdam():
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.markdown(response)
+

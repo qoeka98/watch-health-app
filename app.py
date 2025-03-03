@@ -5,8 +5,7 @@ from home import run_home
 from ml import run_ml
 from snagdam import run_snagdam
 
-# ✅ `st.set_page_config()`를 가장 먼저 실행
-st.set_page_config(page_title="건강 예측 AI", page_icon="🩺", layout="wide")
+
 
 
 def main():

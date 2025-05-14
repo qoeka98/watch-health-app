@@ -32,7 +32,7 @@ def filter_ai_response(response, user_input):
     return response
 
 def get_huggingface_token():
-    # 🔁 로컬 개발 시 직접 입력 / 배포 시 secrets.toml 사용
+    # 로컬 개발 시 직접 입력 / 배포 시 secrets.toml 사용
     return "hf_your_token_here"  # 여기에 본인의 HF API 토큰 입력
 
 def run_snagdam():
@@ -52,13 +52,13 @@ def run_snagdam():
 
     token = get_huggingface_token()
 
-    # ✅ Mistral 모델로 설정
+    # zephyr-7b-beta 모델로 설정
     client = InferenceClient(
-        model="mistralai/Mistral-7B-Instruct-v0.2",
+        model="HuggingFaceH4/zephyr-7b-beta",
         token=token
     )
 
-    # ✅ 초기 메시지 세팅
+    # 초기 메시지 세팅
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {"role": "user", "content": "건강 상담을 시작해주세요"}
@@ -68,7 +68,7 @@ def run_snagdam():
         with st.chat_message("user" if message["role"] == "user" else "assistant"):
             st.markdown(message["content"])
 
-    # ✅ 사용자 입력 받기
+    # 사용자 입력 받기
     chat = st.chat_input("건강 관련 질문을 입력하세요!")
 
     if chat:
@@ -77,20 +77,20 @@ def run_snagdam():
         if not is_health_related(clean_chat):
             response = "죄송합니다. 건강 관련 질문만 답변할 수 있어요."
         else:
-            # ✅ 시스템 프롬프트 (역할 지정)
+            # 시스템 프롬프트 (역할 지정)
             system_prompt = (
                 "너는 건강 전문가야. 당뇨, 고혈압, 고지혈증, 비만, 다이어트 등 "
                 "의학적 정보를 신중하고 정확하게 설명해줘야 해."
             )
 
-            # ✅ 사용자 메시지 저장 및 UI 출력
+            # 사용자 메시지 저장 및 UI 출력
             st.session_state.messages.append({"role": "user", "content": clean_chat})
             with st.chat_message("user"):
                 st.markdown(clean_chat)
 
-            # ✅ AI 응답
+            # AI 응답
             with st.spinner("AI가 응답을 생성 중입니다..."):
-                full_prompt = f"[INST] {system_prompt}\n\n{clean_chat} [/INST]"
+                full_prompt = f"{system_prompt}\n\n사용자: {clean_chat}\nAI:"
 
                 response = client.text_generation(
                     prompt=full_prompt,
@@ -100,13 +100,11 @@ def run_snagdam():
 
                 response = filter_ai_response(response, clean_chat)
 
-        # ✅ 응답 저장 및 출력
+        # 응답 저장 및 출력
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.markdown(response)
 
-# ✅ 메인 함수 진입점
+# 메인 함수 진입점
 def main():
     run_snagdam()
-
-

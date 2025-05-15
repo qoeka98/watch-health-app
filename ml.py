@@ -109,7 +109,7 @@ def run_ml():
 
     # 🎯 **결론**  
     ✅ **XGBoost Regressor를 활용한 99% R² Score의 질병 예측 AI 구축!**  
-    ✅ **Hugging Face `google/gemma-2-9b-it` 모델을 활용한 건강 상담 챗봇 개발!**  
+    ✅ **Hugging Face `HuggingFaceH4/zephyr-7b-beta` 모델을 활용한 건강 상담 챗봇 개발!**  
     ✅ **Streamlit 기반으로 간편하게 배포할 수 있는 웹 애플리케이션 완성!**  
 
     🔥 **AI 기반 건강 예측 & 상담 서비스의 새로운 가능성을 제시한 프로젝트!** 🚀
